@@ -1,14 +1,117 @@
+import { create } from "zustand";
+
+import {
+  fetchUserAttributes,
+  getCurrentUser,
+  signIn,
+  signOut,
+  signUp,
+  updateUserAttributes,
+} from "../services/auth";
 import type { User } from "../types";
 
 export interface AuthState {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (input: { email: string; password: string; name: string }) => Promise<void>;
-  signOut: () => Promise<void>;
+  error: string | null;
+  initialize: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   setTeam: (teamId: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-export function useAuthStore(): AuthState {
-  throw new Error("[useAuthStore] não implementado — responsável: Plano 02");
+function errorMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  return fallback;
 }
+
+async function loadCurrentUser(): Promise<User> {
+  const cognitoUser = await getCurrentUser();
+  const attrs = await fetchUserAttributes();
+  return {
+    id: cognitoUser.userId,
+    email: attrs.email ?? cognitoUser.signInDetails?.loginId ?? "",
+    name: attrs.name ?? "",
+    teamId: attrs["custom:teamId"] ?? "",
+  };
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  isLoading: false,
+  error: null,
+
+  initialize: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await loadCurrentUser();
+      set({ user });
+    } catch {
+      set({ user: null });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  login: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      await signIn({ username: email, password });
+      const user = await loadCurrentUser();
+      set({ user });
+    } catch (e) {
+      set({ error: errorMessage(e, "Erro ao fazer login") });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  register: async (name, email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      await signUp({
+        username: email,
+        password,
+        options: { userAttributes: { name, email } },
+      });
+      // Tenta logar imediatamente. Pool Cognito sem confirmação obrigatória conclui o fluxo;
+      // pools com confirmação retornam UserNotConfirmedException, capturada como error.
+      await signIn({ username: email, password });
+      const user = await loadCurrentUser();
+      set({ user });
+    } catch (e) {
+      set({ error: errorMessage(e, "Erro ao criar conta") });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  setTeam: async (teamId) => {
+    set({ error: null });
+    try {
+      await updateUserAttributes({
+        userAttributes: { "custom:teamId": teamId },
+      });
+      set((state) => ({
+        user: state.user ? { ...state.user, teamId } : null,
+      }));
+    } catch (e) {
+      set({ error: errorMessage(e, "Erro ao salvar time") });
+      throw e;
+    }
+  },
+
+  logout: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await signOut();
+    } finally {
+      set({ user: null, isLoading: false });
+    }
+  },
+}));
+
+// Helper síncrono para consumidores não-React (ex.: navegadores manuais).
+export const getAuthState = (): AuthState => useAuthStore.getState();

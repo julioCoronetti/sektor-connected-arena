@@ -1,29 +1,38 @@
-import type { User } from "../types";
+// Polyfill exigido pelo Amplify v6 em React Native (UUID, getRandomValues).
+import "react-native-get-random-values";
+// Registra storage e helpers de plataforma para o Amplify em RN.
+import "@aws-amplify/react-native";
 
-function notImplemented(fn: string, plano: string): never {
-  throw new Error(`[auth.${fn}] não implementado — responsável: ${plano}`);
-}
+import { Amplify } from "aws-amplify";
+import {
+  fetchUserAttributes,
+  getCurrentUser,
+  signIn,
+  signOut,
+  signUp,
+  updateUserAttributes,
+} from "aws-amplify/auth";
 
-export function signIn(_email: string, _password: string): Promise<User> {
-  return notImplemented("signIn", "Plano 02");
-}
+import { AWS_REGION } from "../constants/config";
 
-export function signUp(_input: {
-  email: string;
-  password: string;
-  name: string;
-}): Promise<User> {
-  return notImplemented("signUp", "Plano 02");
-}
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: process.env.EXPO_PUBLIC_COGNITO_USER_POOL_ID ?? "",
+      userPoolClientId: process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID ?? "",
+      // userPoolEndpoint usa AWS_REGION via convenção do userPoolId (us-east-1_XXX).
+      // Mantemos a região exportada para outros serviços que possam consumi-la.
+    },
+  },
+});
 
-export function signOut(): Promise<void> {
-  return notImplemented("signOut", "Plano 02");
-}
+void AWS_REGION; // mantém a importação viva caso outros serviços passem a usar.
 
-export function getCurrentUser(): Promise<User | null> {
-  return notImplemented("getCurrentUser", "Plano 02");
-}
-
-export function setTeam(_teamId: string): Promise<void> {
-  return notImplemented("setTeam", "Plano 02");
-}
+export {
+  fetchUserAttributes,
+  getCurrentUser,
+  signIn,
+  signOut,
+  signUp,
+  updateUserAttributes,
+};
