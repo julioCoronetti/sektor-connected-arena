@@ -1,15 +1,6 @@
-import { Text, View } from "react-native";
+import { Redirect } from "expo-router";
 
+// AuthGuard stub: Plano 02 substituirá por redirect baseado em authStore.
 export default function Index() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
-    </View>
-  );
+  return <Redirect href="/(auth)/login" />;
 }
