@@ -22,15 +22,17 @@ export default function SelectTeamScreen() {
       await setTeam(teamId);
       router.replace("/(tabs)/community");
     } catch {
-      // Erro já fica em useAuthStore.error.
+      // error fica no store
     } finally {
       setSubmittingId(null);
     }
   };
 
   return (
-    <View className="flex-1 justify-center bg-white px-6">
-      <Text className="mb-8 text-2xl font-bold">Escolha seu time</Text>
+    <View className="flex-1 justify-center bg-sektor-bg px-6">
+      <Text className="mb-8 text-2xl font-bold text-sektor-text">
+        Escolha seu time
+      </Text>
 
       {TEAMS.map((team) => {
         const submitting = submittingId === team.id;
@@ -58,7 +60,7 @@ export default function SelectTeamScreen() {
       })}
 
       {error ? (
-        <Text className="mt-4 text-center text-red-500">{error}</Text>
+        <Text className="mt-4 text-center text-red-400">{error}</Text>
       ) : null}
     </View>
   );

@@ -5,8 +5,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 
 import { useAuthStore } from "../../store/authStore";
 
@@ -27,7 +27,6 @@ export default function RegisterScreen() {
 
   const handleSubmit = async () => {
     await register(name.trim(), email.trim(), password);
-    // Após register o store popula `user` em caso de sucesso ou `error` em falha.
     const state = useAuthStore.getState();
     if (state.user && !state.error) {
       router.replace("/(auth)/select-team");
@@ -35,20 +34,27 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View className="flex-1 justify-center bg-white px-6">
-      <Text className="mb-8 text-2xl font-bold">Criar conta no Sektor</Text>
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      className="flex-1 justify-center bg-sektor-bg px-6"
+    >
+      <Text className="mb-8 text-2xl font-bold text-sektor-text">
+        Criar conta no Sektor
+      </Text>
 
       <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-4 py-3"
+        className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="Nome"
+        placeholderTextColor="#6B6B80"
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
         editable={!isLoading}
       />
       <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-4 py-3"
+        className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="E-mail"
+        placeholderTextColor="#6B6B80"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -57,8 +63,9 @@ export default function RegisterScreen() {
         editable={!isLoading}
       />
       <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-4 py-3"
+        className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="Senha"
+        placeholderTextColor="#6B6B80"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -67,15 +74,15 @@ export default function RegisterScreen() {
       />
 
       {error ? (
-        <Text className="mb-4 text-red-500" testID="register-error">
+        <Text className="mb-4 text-red-400" testID="register-error">
           {error}
         </Text>
       ) : null}
 
       <TouchableOpacity
         accessibilityRole="button"
-        className={`items-center rounded-lg py-4 ${
-          canSubmit ? "bg-black" : "bg-gray-400"
+        className={`items-center rounded-xl py-4 ${
+          canSubmit ? "bg-sektor-accent" : "bg-sektor-border"
         }`}
         onPress={handleSubmit}
         disabled={!canSubmit}
@@ -87,9 +94,9 @@ export default function RegisterScreen() {
         )}
       </TouchableOpacity>
 
-      <Link href="/(auth)/login" className="mt-4 text-center text-gray-500">
+      <Link href="/(auth)/login" className="mt-4 text-center text-sektor-muted">
         Já tenho conta
       </Link>
-    </View>
+    </Animated.View>
   );
 }

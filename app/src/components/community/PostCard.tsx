@@ -20,22 +20,24 @@ function timeAgo(dateStr: string): string {
 
 export function PostCard({ post, onLike, onComment }: PostCardProps) {
   return (
-    <View className="border-b border-gray-100 bg-white px-4 py-4">
+    <View className="border-b border-sektor-border bg-sektor-surface px-4 py-4">
       <View className="mb-3 flex-row items-center">
-        <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-gray-200">
-          <Text className="font-bold text-gray-600">
+        <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-sektor-border">
+          <Text className="font-bold text-sektor-text">
             {post.authorName[0]?.toUpperCase() ?? "?"}
           </Text>
         </View>
         <View>
-          <Text className="text-sm font-semibold">{post.authorName}</Text>
-          <Text className="text-xs text-gray-400">
+          <Text className="text-sm font-semibold text-sektor-text">
+            {post.authorName}
+          </Text>
+          <Text className="text-xs text-sektor-muted">
             {timeAgo(post.createdAt)}
           </Text>
         </View>
       </View>
 
-      <Text className="mb-3 text-base">{post.text}</Text>
+      <Text className="mb-3 text-base text-sektor-text">{post.text}</Text>
 
       {post.imageUrl ? (
         <Image
@@ -53,7 +55,7 @@ export function PostCard({ post, onLike, onComment }: PostCardProps) {
           onPress={onLike}
           className="flex-row items-center gap-1"
         >
-          <Text className="text-gray-500">❤️ {post.likes}</Text>
+          <Text className="text-sektor-muted">❤️ {post.likes}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -61,7 +63,7 @@ export function PostCard({ post, onLike, onComment }: PostCardProps) {
           onPress={onComment}
           className="flex-row items-center gap-1"
         >
-          <Text className="text-gray-500">💬 {post.commentCount}</Text>
+          <Text className="text-sektor-muted">💬 {post.commentCount}</Text>
         </TouchableOpacity>
       </View>
     </View>

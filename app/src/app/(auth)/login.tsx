@@ -5,8 +5,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 
 import { useAuthStore } from "../../store/authStore";
 
@@ -21,12 +21,18 @@ export default function LoginScreen() {
     email.trim().length > 0 && password.length > 0 && !isLoading;
 
   return (
-    <View className="flex-1 justify-center bg-white px-6">
-      <Text className="mb-8 text-2xl font-bold">Entrar no Sektor</Text>
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      className="flex-1 justify-center bg-sektor-bg px-6"
+    >
+      <Text className="mb-8 text-2xl font-bold text-sektor-text">
+        Entrar no Sektor
+      </Text>
 
       <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-4 py-3"
+        className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="E-mail"
+        placeholderTextColor="#6B6B80"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -35,8 +41,9 @@ export default function LoginScreen() {
         editable={!isLoading}
       />
       <TextInput
-        className="mb-4 rounded-lg border border-gray-300 px-4 py-3"
+        className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="Senha"
+        placeholderTextColor="#6B6B80"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -45,15 +52,15 @@ export default function LoginScreen() {
       />
 
       {error ? (
-        <Text className="mb-4 text-red-500" testID="login-error">
+        <Text className="mb-4 text-red-400" testID="login-error">
           {error}
         </Text>
       ) : null}
 
       <TouchableOpacity
         accessibilityRole="button"
-        className={`items-center rounded-lg py-4 ${
-          canSubmit ? "bg-black" : "bg-gray-400"
+        className={`items-center rounded-xl py-4 ${
+          canSubmit ? "bg-sektor-accent" : "bg-sektor-border"
         }`}
         onPress={() => login(email.trim(), password)}
         disabled={!canSubmit}
@@ -67,10 +74,10 @@ export default function LoginScreen() {
 
       <Link
         href="/(auth)/register"
-        className="mt-4 text-center text-gray-500"
+        className="mt-4 text-center text-sektor-muted"
       >
         Criar conta
       </Link>
-    </View>
+    </Animated.View>
   );
 }

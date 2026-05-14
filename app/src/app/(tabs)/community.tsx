@@ -15,7 +15,7 @@ export default function CommunityScreen() {
   }, [loadPosts]);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-sektor-bg">
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -23,9 +23,7 @@ export default function CommunityScreen() {
           <PostCard
             post={item}
             onLike={() => toggleLike(item.id, false)}
-            onComment={() => {
-              /* Comentários — implementação visual futura */
-            }}
+            onComment={() => {}}
           />
         )}
         onRefresh={() => loadPosts(true)}
@@ -33,7 +31,7 @@ export default function CommunityScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View className="items-center py-12">
-              <Text className="text-gray-400">
+              <Text className="text-sektor-muted">
                 {error ?? "Nenhum post ainda. Seja o primeiro!"}
               </Text>
             </View>
@@ -46,7 +44,7 @@ export default function CommunityScreen() {
               className="items-center py-4"
               onPress={() => loadPosts(false)}
             >
-              <Text className="text-blue-500">Carregar mais</Text>
+              <Text className="text-sektor-accent">Carregar mais</Text>
             </TouchableOpacity>
           ) : null
         }
@@ -55,7 +53,7 @@ export default function CommunityScreen() {
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel="Criar novo post"
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-black shadow-lg"
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-sektor-accent shadow-lg"
         onPress={() => setShowCreate(true)}
       >
         <Text className="text-2xl text-white">+</Text>

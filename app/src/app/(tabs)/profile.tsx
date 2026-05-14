@@ -13,27 +13,33 @@ export default function ProfileScreen() {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   return (
-    <View className="flex-1 bg-white px-6 py-12">
-      <Text className="mb-2 text-2xl font-bold">Perfil</Text>
-      <Text className="mb-8 text-gray-500">Plano 02</Text>
+    <View className="flex-1 bg-sektor-bg px-6 py-12">
+      <Text className="mb-2 text-2xl font-bold text-sektor-text">Perfil</Text>
 
       {user ? (
-        <View className="mb-8">
-          <Text className="text-base text-gray-700">
-            Nome: <Text className="font-bold">{user.name || "—"}</Text>
+        <View className="mb-8 rounded-xl bg-sektor-surface p-4">
+          <Text className="text-base text-sektor-muted">
+            Nome:{" "}
+            <Text className="font-bold text-sektor-text">
+              {user.name || "—"}
+            </Text>
           </Text>
-          <Text className="text-base text-gray-700">
-            E-mail: <Text className="font-bold">{user.email}</Text>
+          <Text className="text-base text-sektor-muted">
+            E-mail:{" "}
+            <Text className="font-bold text-sektor-text">{user.email}</Text>
           </Text>
-          <Text className="text-base text-gray-700">
-            Time: <Text className="font-bold">{user.teamId || "—"}</Text>
+          <Text className="text-base text-sektor-muted">
+            Time:{" "}
+            <Text className="font-bold text-sektor-text">
+              {user.teamId || "—"}
+            </Text>
           </Text>
         </View>
       ) : null}
 
       <TouchableOpacity
         accessibilityRole="button"
-        className="items-center rounded-lg bg-black py-4"
+        className="items-center rounded-xl bg-sektor-accent py-4"
         onPress={() => logout()}
         disabled={isLoading}
       >
