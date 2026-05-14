@@ -1,13 +1,31 @@
+import { create } from "zustand";
+
 import type { Match, Prediction, PressureBarState } from "../types";
 
 export interface ArenaState {
   match: Match | null;
   pressureBar: PressureBarState;
   activePrediction: Prediction | null;
-  submitAnswer: (predictionId: string, optionIndex: number) => void;
-  updatePressure: (next: PressureBarState) => void;
+  setMatch: (match: Match) => void;
+  setActivePrediction: (prediction: Prediction | null) => void;
+  updatePressure: (pressureBar: PressureBarState) => void;
+  reset: () => void;
 }
 
-export function useArenaStore(): ArenaState {
-  throw new Error("[useArenaStore] não implementado — responsável: Plano 03");
-}
+export const INITIAL_PRESSURE: PressureBarState = { teamA: 50, teamB: 50 };
+
+export const useArenaStore = create<ArenaState>((set) => ({
+  match: null,
+  pressureBar: INITIAL_PRESSURE,
+  activePrediction: null,
+
+  setMatch: (match) => set({ match }),
+  setActivePrediction: (prediction) => set({ activePrediction: prediction }),
+  updatePressure: (pressureBar) => set({ pressureBar }),
+  reset: () =>
+    set({
+      match: null,
+      pressureBar: INITIAL_PRESSURE,
+      activePrediction: null,
+    }),
+}));
