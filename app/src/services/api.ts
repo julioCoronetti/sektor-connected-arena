@@ -1,36 +1,69 @@
-import type { Comment, Match, Post } from "../types";
+import { fetchAuthSession } from "aws-amplify/auth";
 
-function notImplemented(fn: string, plano: string): never {
-  throw new Error(`[api.${fn}] não implementado — responsável: ${plano}`);
+import { API_REST_URL } from "../constants/config";
+import type { Comment, Post } from "../types";
+
+async function getAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
 }
 
-export function getFeed(_teamId: string, _cursor?: string): Promise<{ posts: Post[]; nextCursor?: string }> {
-  return notImplemented("getFeed", "Plano 05");
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const authHeaders = await getAuthHeader();
+  const response = await fetch(`${API_REST_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+      ...(options.headers as Record<string, string>),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<T>;
 }
 
-export function createPost(_input: {
-  authorId: string;
-  text: string;
-  imageUrl?: string;
-}): Promise<Post> {
-  return notImplemented("createPost", "Plano 05");
-}
+export const api = {
+  getPosts: (teamId: string, lastKey?: string) =>
+    request<{ posts: Post[]; lastKey?: string }>(
+      `/posts?teamId=${encodeURIComponent(teamId)}${lastKey ? `&lastKey=${encodeURIComponent(lastKey)}` : ""}`,
+    ),
 
-export function likePost(_postId: string): Promise<void> {
-  return notImplemented("likePost", "Plano 05");
-}
+  createPost: (text: string, imageUrl?: string) =>
+    request<{ post: Post }>("/posts", {
+      method: "POST",
+      body: JSON.stringify({ text, imageUrl }),
+    }),
 
-export function getComments(_postId: string): Promise<Comment[]> {
-  return notImplemented("getComments", "Plano 05");
-}
+  likePost: (postId: string) =>
+    request<{ likes: number }>(`/posts/${encodeURIComponent(postId)}/like`, {
+      method: "POST",
+    }),
 
-export function createComment(_input: {
-  postId: string;
-  text: string;
-}): Promise<Comment> {
-  return notImplemented("createComment", "Plano 05");
-}
+  unlikePost: (postId: string) =>
+    request<{ likes: number }>(`/posts/${encodeURIComponent(postId)}/like`, {
+      method: "DELETE",
+    }),
 
-export function getMatch(_matchId: string): Promise<Match> {
-  return notImplemented("getMatch", "Plano 03");
-}
+  getComments: (postId: string) =>
+    request<{ comments: Comment[] }>(
+      `/posts/${encodeURIComponent(postId)}/comments`,
+    ),
+
+  createComment: (postId: string, text: string) =>
+    request<{ comment: Comment }>(
+      `/posts/${encodeURIComponent(postId)}/comments`,
+      { method: "POST", body: JSON.stringify({ text }) },
+    ),
+
+  getUploadUrl: (filename: string, type: string) =>
+    request<{ uploadUrl: string; fileUrl: string }>(
+      `/upload-url?filename=${encodeURIComponent(filename)}&type=${encodeURIComponent(type)}`,
+    ),
+};
