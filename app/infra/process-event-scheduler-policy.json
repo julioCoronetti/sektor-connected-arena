@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ManageSchedules",
+      "Effect": "Allow",
+      "Action": ["scheduler:CreateSchedule", "scheduler:DeleteSchedule"],
+      "Resource": "arn:aws:scheduler:us-east-1:482712210181:schedule/sektor-prediction-resolutions/*"
+    },
+    {
+      "Sid": "PassSchedulerInvokeRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::482712210181:role/sektor-scheduler-invoke-resolve",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "scheduler.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

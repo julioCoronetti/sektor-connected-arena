@@ -1,0 +1,30 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteAnswers",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-answers"
+    },
+    {
+      "Sid": "ReadConnections",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:Query"],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-connections",
+        "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-connections/index/*"
+      ]
+    },
+    {
+      "Sid": "ManageConnections",
+      "Effect": "Allow",
+      "Action": "execute-api:ManageConnections",
+      "Resource": "arn:aws:execute-api:us-east-1:482712210181:3bodgtvae0/prod/POST/@connections/*"
+    }
+  ]
+}
