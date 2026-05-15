@@ -8,11 +8,13 @@ import { PressureBar } from "../../components/arena/PressureBar";
 import { API_WS_URL, TEAMS } from "../../constants/config";
 import { useLocation } from "../../hooks/useLocation";
 import { useWebSocket } from "../../hooks/useWebSocket";
+import { getIdToken } from "../../services/auth";
 import {
   buildAnswerMessage,
   parseServerMessage,
 } from "../../services/arenaProtocol";
 import { useArenaStore } from "../../store/arenaStore";
+import { useAuthStore } from "../../store/authStore";
 
 const STATUS_LABEL: Record<string, string> = {
   connecting: "Conectando…",
@@ -24,19 +26,28 @@ const STATUS_LABEL: Record<string, string> = {
 export default function ArenaScreen() {
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const [arMode, setArMode] = useState(false);
+  const [wsUrl, setWsUrl] = useState<string | null>(null);
 
   const match = useArenaStore((s) => s.match);
   const pressureBar = useArenaStore((s) => s.pressureBar);
   const activePrediction = useArenaStore((s) => s.activePrediction);
+  const answeredIds = useArenaStore((s) => s.answeredPredictionIds);
+  const lastSendFailure = useArenaStore((s) => s.lastSendFailure);
+  const myScore = useArenaStore((s) => s.myScore);
   const setMatch = useArenaStore((s) => s.setMatch);
   const setActivePrediction = useArenaStore((s) => s.setActivePrediction);
   const updatePressure = useArenaStore((s) => s.updatePressure);
+  const markAnswered = useArenaStore((s) => s.markAnswered);
+  const markSendFailure = useArenaStore((s) => s.markSendFailure);
+  const clearSendFailure = useArenaStore((s) => s.clearSendFailure);
+  const setMyScore = useArenaStore((s) => s.setMyScore);
   const reset = useArenaStore((s) => s.reset);
+
+  const userId = useAuthStore((s) => s.user?.id ?? null);
 
   const { isInStadium, multiplier } = useLocation();
 
   useEffect(() => {
-    // Estado inicial até o servidor enviar MATCH_STATE.
     setMatch({
       id: matchId ?? "unknown",
       teamA: TEAMS[0],
@@ -48,6 +59,26 @@ export default function ArenaScreen() {
       reset();
     };
   }, [matchId, setMatch, reset]);
+
+  // Anexa o ID Token Cognito como query string para o $connect autenticar.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await getIdToken();
+      if (cancelled) return;
+      const params = new URLSearchParams({ matchId: matchId ?? "" });
+      if (token) params.set("token", token);
+      setWsUrl(`${API_WS_URL}?${params.toString()}`);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
+  const userIdRef = useRef(userId);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   const handleMessage = useCallback(
     (raw: unknown) => {
@@ -65,17 +96,29 @@ export default function ArenaScreen() {
           updatePressure(message.pressureBar);
           break;
         case "PREDICTION_RESULT":
+          // O modal já é fechado localmente ao expirar; nada a fazer aqui.
+          break;
+        case "SCORE_UPDATE":
+          if (message.userId === userIdRef.current) {
+            setMyScore({
+              score: message.score,
+              correctCount: message.correctCount,
+              wrongCount: message.wrongCount,
+            });
+          }
+          break;
+        case "ANSWER_ACCEPTED":
+          clearSendFailure();
+          break;
+        case "ANSWER_REJECTED":
+          // Mantém estado; UI poderia exibir um toast com o motivo.
           break;
       }
     },
-    [setMatch, setActivePrediction, updatePressure],
+    [setMatch, setActivePrediction, updatePressure, setMyScore, clearSendFailure],
   );
 
-  const wsUrl = useMemo(
-    () => `${API_WS_URL}?matchId=${encodeURIComponent(matchId ?? "")}`,
-    [matchId],
-  );
-  const { status, send } = useWebSocket(wsUrl, handleMessage);
+  const { status, send } = useWebSocket(wsUrl ?? "", handleMessage);
 
   const activePredictionRef = useRef(activePrediction);
   useEffect(() => {
@@ -86,16 +129,46 @@ export default function ArenaScreen() {
     (optionIndex: number) => {
       const current = activePredictionRef.current;
       if (!current) return;
-      send(
+
+      // Bloqueia respostas duplicadas no cliente.
+      if (answeredIds.includes(current.id)) {
+        setActivePrediction(null);
+        return;
+      }
+
+      // Bloqueia se já expirou no momento da seleção.
+      const now = Date.now();
+      const expiresAt = new Date(current.expiresAt).getTime();
+      if (Number.isFinite(expiresAt) && now >= expiresAt) {
+        setActivePrediction(null);
+        return;
+      }
+
+      const ok = send(
         buildAnswerMessage({
           predictionId: current.id,
           selectedOption: optionIndex,
           gpsMultiplier: multiplier,
         }),
       );
+
+      if (ok) {
+        markAnswered(current.id);
+        clearSendFailure();
+      } else {
+        markSendFailure(current.id);
+      }
       setActivePrediction(null);
     },
-    [send, setActivePrediction, multiplier],
+    [
+      answeredIds,
+      send,
+      multiplier,
+      markAnswered,
+      markSendFailure,
+      clearSendFailure,
+      setActivePrediction,
+    ],
   );
 
   const handleExpire = useCallback(() => {
@@ -143,6 +216,29 @@ export default function ArenaScreen() {
       >
         {STATUS_LABEL[status] ?? status}
       </Text>
+
+      {/* Score do usuário */}
+      <View className="mx-4 mb-3 flex-row items-center justify-between rounded-xl bg-sektor-surface px-4 py-2">
+        <Text className="text-sektor-muted">Seus pontos</Text>
+        <Text className="text-base font-bold text-sektor-text">
+          {myScore.score}{" "}
+          <Text className="text-xs text-sektor-muted">
+            ({myScore.correctCount}/{myScore.correctCount + myScore.wrongCount})
+          </Text>
+        </Text>
+      </View>
+
+      {/* Indicação de falha de envio */}
+      {lastSendFailure ? (
+        <View
+          testID="answer-send-failure"
+          className="mx-4 mb-3 rounded-xl border border-red-500/40 bg-red-900/30 px-4 py-2"
+        >
+          <Text className="text-xs font-bold text-red-300">
+            ⚠️ Falha ao enviar resposta — verifique a conexão
+          </Text>
+        </View>
+      ) : null}
 
       <PressureBar pressureBar={pressureBar} match={match} />
 

@@ -38,6 +38,7 @@ export function useWebSocket(
 
   const connect = useCallback(() => {
     if (teardownRef.current) return;
+    if (!url) return; // Sem URL ainda — aguarda configuração.
     setStatus((prev) => (prev === "reconnecting" ? "reconnecting" : "connecting"));
     const ws = new WebSocket(url);
     wsRef.current = ws;

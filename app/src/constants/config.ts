@@ -18,3 +18,5 @@ export const TEAMS = [
   { id: "team-a", name: "Time A", color: "#E63946" },
   { id: "team-b", name: "Time B", color: "#1D3557" },
 ] as const;
+
+export const DEMO_MATCH_ID = "match-001";

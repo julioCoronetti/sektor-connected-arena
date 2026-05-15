@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
-import { MOCK_MATCH } from "../../services/matchSimulator";
+import { DEMO_MATCH_ID } from "../../constants/config";
 
 export default function ArenaTabScreen() {
   const router = useRouter();
@@ -17,7 +17,10 @@ export default function ArenaTabScreen() {
         accessibilityRole="button"
         className="rounded-xl bg-sektor-accent px-8 py-4"
         onPress={() =>
-          router.push({ pathname: "/arena/[matchId]", params: { matchId: MOCK_MATCH.id } })
+          router.push({
+            pathname: "/arena/[matchId]",
+            params: { matchId: DEMO_MATCH_ID },
+          })
         }
       >
         <Text className="font-bold text-white">Entrar na Partida Demo</Text>

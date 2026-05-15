@@ -9,6 +9,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["dist"]
+  "include": [
+    "./**/*.ts"
+  ],
+  "exclude": [
+    "dist"
+  ]
 }

@@ -1,7 +1,4 @@
-import {
-  buildAnswerMessage,
-  parseServerMessage,
-} from "../arenaProtocol";
+import { buildAnswerMessage, parseServerMessage } from "../arenaProtocol";
 
 const validMatch = {
   id: "match-001",
@@ -21,12 +18,13 @@ const validPrediction = {
 
 describe("arenaProtocol.parseServerMessage", () => {
   it("parses a MATCH_STATE payload", () => {
-    const result = parseServerMessage({
-      type: "MATCH_STATE",
-      match: validMatch,
-      pressureBar: { teamA: 60, teamB: 40 },
-    });
-    expect(result).toEqual({
+    expect(
+      parseServerMessage({
+        type: "MATCH_STATE",
+        match: validMatch,
+        pressureBar: { teamA: 60, teamB: 40 },
+      }),
+    ).toEqual({
       type: "MATCH_STATE",
       match: validMatch,
       pressureBar: { teamA: 60, teamB: 40 },
@@ -34,37 +32,84 @@ describe("arenaProtocol.parseServerMessage", () => {
   });
 
   it("parses a PREDICTION payload", () => {
-    const result = parseServerMessage({
-      type: "PREDICTION",
-      prediction: validPrediction,
-    });
-    expect(result).toEqual({
+    expect(
+      parseServerMessage({
+        type: "PREDICTION",
+        prediction: validPrediction,
+      }),
+    ).toEqual({
       type: "PREDICTION",
       prediction: validPrediction,
     });
   });
 
   it("parses a PRESSURE_UPDATE payload", () => {
-    const result = parseServerMessage({
-      type: "PRESSURE_UPDATE",
-      pressureBar: { teamA: 30, teamB: 70 },
-    });
-    expect(result).toEqual({
+    expect(
+      parseServerMessage({
+        type: "PRESSURE_UPDATE",
+        pressureBar: { teamA: 30, teamB: 70 },
+      }),
+    ).toEqual({
       type: "PRESSURE_UPDATE",
       pressureBar: { teamA: 30, teamB: 70 },
     });
   });
 
   it("parses a PREDICTION_RESULT payload", () => {
-    const result = parseServerMessage({
+    expect(
+      parseServerMessage({
+        type: "PREDICTION_RESULT",
+        predictionId: "pred-001",
+        correctOption: 2,
+      }),
+    ).toEqual({
       type: "PREDICTION_RESULT",
       predictionId: "pred-001",
       correctOption: 2,
     });
-    expect(result).toEqual({
-      type: "PREDICTION_RESULT",
-      predictionId: "pred-001",
-      correctOption: 2,
+  });
+
+  it("parses a SCORE_UPDATE payload", () => {
+    expect(
+      parseServerMessage({
+        type: "SCORE_UPDATE",
+        userId: "user-1",
+        score: 30,
+        correctCount: 3,
+        wrongCount: 1,
+      }),
+    ).toEqual({
+      type: "SCORE_UPDATE",
+      userId: "user-1",
+      score: 30,
+      correctCount: 3,
+      wrongCount: 1,
+    });
+  });
+
+  it("parses ANSWER_ACCEPTED and ANSWER_REJECTED payloads", () => {
+    expect(
+      parseServerMessage({ type: "ANSWER_ACCEPTED", predictionId: "pred-1" }),
+    ).toEqual({ type: "ANSWER_ACCEPTED", predictionId: "pred-1" });
+
+    expect(
+      parseServerMessage({
+        type: "ANSWER_REJECTED",
+        predictionId: "pred-1",
+        reason: "DUPLICATE",
+      }),
+    ).toEqual({
+      type: "ANSWER_REJECTED",
+      predictionId: "pred-1",
+      reason: "DUPLICATE",
+    });
+
+    expect(
+      parseServerMessage({ type: "ANSWER_REJECTED", reason: "UNAUTHORIZED" }),
+    ).toEqual({
+      type: "ANSWER_REJECTED",
+      predictionId: undefined,
+      reason: "UNAUTHORIZED",
     });
   });
 
@@ -76,9 +121,9 @@ describe("arenaProtocol.parseServerMessage", () => {
     [],
     {},
     { type: "UNKNOWN" },
-    { type: "PREDICTION" }, // sem prediction
+    { type: "PREDICTION" },
     { type: "PRESSURE_UPDATE", pressureBar: { teamA: "x", teamB: 10 } },
-    { type: "MATCH_STATE", match: validMatch }, // sem pressureBar
+    { type: "MATCH_STATE", match: validMatch },
     {
       type: "MATCH_STATE",
       match: { ...validMatch, status: "broken" },
@@ -91,8 +136,10 @@ describe("arenaProtocol.parseServerMessage", () => {
     {
       type: "PREDICTION_RESULT",
       predictionId: "pred-001",
-      // correctOption ausente
     },
+    { type: "SCORE_UPDATE", userId: "u", score: 1, correctCount: 1 },
+    { type: "ANSWER_REJECTED", reason: "WHAT" },
+    { type: "ANSWER_ACCEPTED" },
   ])("returns null for invalid payload: %p", (payload) => {
     expect(parseServerMessage(payload as unknown)).toBeNull();
   });

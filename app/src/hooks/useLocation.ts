@@ -26,12 +26,34 @@ export function getDistanceMeters(
 export interface UseLocationResult {
   isInStadium: boolean;
   permissionDenied: boolean;
-  multiplier: number;
+  multiplier: 1 | 2;
+}
+
+const GPS_TIMEOUT_MS = 5_000;
+const MIN_HORIZONTAL_ACCURACY_METERS = 100;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("gps-timeout")),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }
 
 /**
  * Verifica se o usuário está dentro do raio do estádio.
- * Retorna multiplicador 2x se dentro, 1x se fora ou sem permissão.
+ * Retorna multiplicador 2 (dentro) ou 1 (fora / erro / sem permissão / GPS impreciso).
  */
 export function useLocation(): UseLocationResult {
   const [isInStadium, setIsInStadium] = useState(false);
@@ -41,25 +63,44 @@ export function useLocation(): UseLocationResult {
     let cancelled = false;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (cancelled) return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (cancelled) return;
 
-      if (status !== "granted") {
-        setPermissionDenied(true);
-        return;
+        if (status !== "granted") {
+          setPermissionDenied(true);
+          return;
+        }
+
+        const location = await withTimeout(
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
+          GPS_TIMEOUT_MS,
+        );
+        if (cancelled) return;
+
+        const accuracy = location.coords.accuracy;
+        if (
+          typeof accuracy !== "number" ||
+          accuracy <= 0 ||
+          accuracy > MIN_HORIZONTAL_ACCURACY_METERS
+        ) {
+          // GPS impreciso → multiplicador 1.
+          return;
+        }
+
+        const distance = getDistanceMeters(
+          location.coords.latitude,
+          location.coords.longitude,
+          STADIUM_COORDS.latitude,
+          STADIUM_COORDS.longitude,
+        );
+
+        setIsInStadium(distance <= STADIUM_COORDS.radiusMeters);
+      } catch {
+        // Timeout, indisponibilidade ou erro de permissão → multiplicador 1.
       }
-
-      const location = await Location.getCurrentPositionAsync({});
-      if (cancelled) return;
-
-      const distance = getDistanceMeters(
-        location.coords.latitude,
-        location.coords.longitude,
-        STADIUM_COORDS.latitude,
-        STADIUM_COORDS.longitude,
-      );
-
-      setIsInStadium(distance <= STADIUM_COORDS.radiusMeters);
     })();
 
     return () => {

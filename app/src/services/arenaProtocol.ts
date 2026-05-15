@@ -1,16 +1,31 @@
 import type { Match, Prediction, PressureBarState } from "../types";
 
+export interface UserScore {
+  userId: string;
+  score: number;
+  correctCount: number;
+  wrongCount: number;
+}
+
+export type AnswerRejectReason =
+  | "UNAUTHORIZED"
+  | "DUPLICATE"
+  | "INVALID_OPTION";
+
 export type ServerMessage =
   | { type: "MATCH_STATE"; match: Match; pressureBar: PressureBarState }
   | { type: "PREDICTION"; prediction: Prediction }
   | { type: "PRESSURE_UPDATE"; pressureBar: PressureBarState }
-  | { type: "PREDICTION_RESULT"; predictionId: string; correctOption: number };
+  | { type: "PREDICTION_RESULT"; predictionId: string; correctOption: number }
+  | { type: "SCORE_UPDATE"; userId: string; score: number; correctCount: number; wrongCount: number }
+  | { type: "ANSWER_ACCEPTED"; predictionId: string }
+  | { type: "ANSWER_REJECTED"; predictionId?: string; reason: AnswerRejectReason };
 
 export type ClientMessage = {
   type: "ANSWER";
   predictionId: string;
   selectedOption: number;
-  gpsMultiplier: number;
+  gpsMultiplier: 1 | 2;
 };
 
 export type ServerMessageType = ServerMessage["type"];
@@ -20,6 +35,15 @@ const SERVER_MESSAGE_TYPES: ServerMessageType[] = [
   "PREDICTION",
   "PRESSURE_UPDATE",
   "PREDICTION_RESULT",
+  "SCORE_UPDATE",
+  "ANSWER_ACCEPTED",
+  "ANSWER_REJECTED",
+];
+
+const ANSWER_REJECT_REASONS: AnswerRejectReason[] = [
+  "UNAUTHORIZED",
+  "DUPLICATE",
+  "INVALID_OPTION",
 ];
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -112,13 +136,47 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         predictionId: raw.predictionId,
         correctOption: raw.correctOption,
       };
+    case "SCORE_UPDATE":
+      if (
+        typeof raw.userId !== "string" ||
+        typeof raw.score !== "number" ||
+        typeof raw.correctCount !== "number" ||
+        typeof raw.wrongCount !== "number"
+      ) {
+        return null;
+      }
+      return {
+        type: "SCORE_UPDATE",
+        userId: raw.userId,
+        score: raw.score,
+        correctCount: raw.correctCount,
+        wrongCount: raw.wrongCount,
+      };
+    case "ANSWER_ACCEPTED":
+      if (typeof raw.predictionId !== "string") return null;
+      return { type: "ANSWER_ACCEPTED", predictionId: raw.predictionId };
+    case "ANSWER_REJECTED": {
+      if (
+        typeof raw.reason !== "string" ||
+        !ANSWER_REJECT_REASONS.includes(raw.reason as AnswerRejectReason)
+      ) {
+        return null;
+      }
+      const predictionId =
+        typeof raw.predictionId === "string" ? raw.predictionId : undefined;
+      return {
+        type: "ANSWER_REJECTED",
+        predictionId,
+        reason: raw.reason as AnswerRejectReason,
+      };
+    }
   }
 }
 
 export function buildAnswerMessage(input: {
   predictionId: string;
   selectedOption: number;
-  gpsMultiplier?: number;
+  gpsMultiplier?: 1 | 2;
 }): ClientMessage {
   return {
     type: "ANSWER",

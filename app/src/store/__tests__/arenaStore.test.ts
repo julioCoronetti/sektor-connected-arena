@@ -1,5 +1,6 @@
 import {
   INITIAL_PRESSURE,
+  INITIAL_SCORE,
   useArenaStore,
 } from "../arenaStore";
 import type { Match, Prediction } from "../../types";
@@ -25,11 +26,14 @@ describe("arenaStore", () => {
     useArenaStore.getState().reset();
   });
 
-  it("starts with neutral pressure and no match", () => {
+  it("starts with neutral pressure, no match and zeroed score", () => {
     const state = useArenaStore.getState();
     expect(state.match).toBeNull();
     expect(state.activePrediction).toBeNull();
     expect(state.pressureBar).toEqual(INITIAL_PRESSURE);
+    expect(state.answeredPredictionIds).toEqual([]);
+    expect(state.lastSendFailure).toBeNull();
+    expect(state.myScore).toEqual(INITIAL_SCORE);
   });
 
   it("setMatch updates only the match field", () => {
@@ -54,11 +58,47 @@ describe("arenaStore", () => {
     });
   });
 
-  it("reset wipes match, prediction and restores neutral pressure", () => {
+  it("markAnswered keeps only one entry per predictionId", () => {
+    const store = useArenaStore.getState();
+    store.markAnswered("pred-001");
+    store.markAnswered("pred-001");
+    store.markAnswered("pred-002");
+    expect(useArenaStore.getState().answeredPredictionIds).toEqual([
+      "pred-001",
+      "pred-002",
+    ]);
+  });
+
+  it("markSendFailure / clearSendFailure round-trips the failed prediction", () => {
+    useArenaStore.getState().markSendFailure("pred-001");
+    expect(useArenaStore.getState().lastSendFailure).toEqual({
+      predictionId: "pred-001",
+    });
+    useArenaStore.getState().clearSendFailure();
+    expect(useArenaStore.getState().lastSendFailure).toBeNull();
+  });
+
+  it("setMyScore replaces the cached user score", () => {
+    useArenaStore.getState().setMyScore({
+      score: 30,
+      correctCount: 3,
+      wrongCount: 1,
+    });
+    expect(useArenaStore.getState().myScore).toEqual({
+      score: 30,
+      correctCount: 3,
+      wrongCount: 1,
+    });
+  });
+
+  it("reset wipes match, prediction, score and restores neutral pressure", () => {
     const store = useArenaStore.getState();
     store.setMatch(matchFixture);
     store.setActivePrediction(predictionFixture);
     store.updatePressure({ teamA: 99, teamB: 1 });
+    store.markAnswered("pred-001");
+    store.markSendFailure("pred-001");
+    store.setMyScore({ score: 50, correctCount: 5, wrongCount: 0 });
 
     store.reset();
 
@@ -66,5 +106,8 @@ describe("arenaStore", () => {
     expect(state.match).toBeNull();
     expect(state.activePrediction).toBeNull();
     expect(state.pressureBar).toEqual(INITIAL_PRESSURE);
+    expect(state.answeredPredictionIds).toEqual([]);
+    expect(state.lastSendFailure).toBeNull();
+    expect(state.myScore).toEqual(INITIAL_SCORE);
   });
 });
