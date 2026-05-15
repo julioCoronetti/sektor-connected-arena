@@ -1,4 +1,4 @@
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 
 import "../global.css";
@@ -15,17 +15,30 @@ export default function RootLayout() {
     initialize();
   }, [initialize]);
 
+  // Auth gate: redireciona via router em vez de retornar <Redirect>, para
+  // evitar trocas da árvore raiz que disparam loops de mount/unmount em
+  // hooks como usePreventRemove do React Navigation.
   useEffect(() => {
     if (isLoading) return;
+
     const inAuthGroup = segments[0] === "(auth)";
     const onSelectTeam = inAuthGroup && segments[1] === "select-team";
 
     if (!user && !inAuthGroup) {
-      router.replace("/(auth)/login");
+      router.replace("/login");
     } else if (user && inAuthGroup && !onSelectTeam) {
-      router.replace("/(tabs)/community");
+      router.replace("/community");
     }
-  }, [user, segments, isLoading, router]);
+  }, [user, isLoading, segments, router]);
 
-  return <Slot />;
+  // Sempre retornar o mesmo Stack: declarar grupos é necessário para que o
+  // navigator raiz reconheça rotas como "(auth)" durante REPLACE.
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="arena/[matchId]" />
+    </Stack>
+  );
 }

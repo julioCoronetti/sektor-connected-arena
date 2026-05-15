@@ -29,7 +29,7 @@ export default function RegisterScreen() {
     await register(name.trim(), email.trim(), password);
     const state = useAuthStore.getState();
     if (state.user && !state.error) {
-      router.replace("/(auth)/select-team");
+      router.replace("/select-team");
     }
   };
 
@@ -94,7 +94,7 @@ export default function RegisterScreen() {
         )}
       </TouchableOpacity>
 
-      <Link href="/(auth)/login" className="mt-4 text-center text-sektor-muted">
+      <Link href="/login" className="mt-4 text-center text-sektor-muted">
         Já tenho conta
       </Link>
     </Animated.View>

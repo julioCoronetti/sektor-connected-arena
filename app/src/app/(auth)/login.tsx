@@ -73,7 +73,7 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       <Link
-        href="/(auth)/register"
+        href="/register"
         className="mt-4 text-center text-sektor-muted"
       >
         Criar conta

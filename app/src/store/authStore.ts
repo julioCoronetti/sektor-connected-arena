@@ -58,7 +58,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      await signIn({ username: email, password });
+      const result = await signIn({ username: email, password });
+      if (!result.isSignedIn) {
+        // nextStep pode ser CONFIRM_SIGN_UP, RESET_PASSWORD, etc.
+        const step = result.nextStep?.signInStep ?? "";
+        if (step === "CONFIRM_SIGN_UP") {
+          set({ error: "Confirme seu e-mail antes de entrar." });
+        } else {
+          set({ error: `Não foi possível entrar (${step}).` });
+        }
+        return;
+      }
       const user = await loadCurrentUser();
       set({ user });
     } catch (e) {
@@ -71,14 +81,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (name, email, password) => {
     set({ isLoading: true, error: null });
     try {
-      await signUp({
+      const signUpResult = await signUp({
         username: email,
         password,
         options: { userAttributes: { name, email } },
       });
-      // Tenta logar imediatamente. Pool Cognito sem confirmação obrigatória conclui o fluxo;
-      // pools com confirmação retornam UserNotConfirmedException, capturada como error.
-      await signIn({ username: email, password });
+
+      // Se o pool exige confirmação por e-mail, não há sessão para carregar atributos.
+      if (!signUpResult.isSignUpComplete) {
+        set({
+          error:
+            "Conta criada. Confirme o código enviado para seu e-mail antes de entrar.",
+        });
+        return;
+      }
+
+      const signInResult = await signIn({ username: email, password });
+      if (!signInResult.isSignedIn) {
+        set({
+          error:
+            "Conta criada, mas é preciso confirmar o e-mail antes de entrar.",
+        });
+        return;
+      }
+
       const user = await loadCurrentUser();
       set({ user });
     } catch (e) {

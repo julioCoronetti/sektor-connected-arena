@@ -20,7 +20,7 @@ export default function SelectTeamScreen() {
     setSubmittingId(teamId);
     try {
       await setTeam(teamId);
-      router.replace("/(tabs)/community");
+      router.replace("/community");
     } catch {
       // error fica no store
     } finally {
