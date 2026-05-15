@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 
+import CommentsModal from "../../components/community/CommentsModal";
 import { CreatePostModal } from "../../components/community/CreatePostModal";
 import { PostCard } from "../../components/community/PostCard";
 import { useCommunity } from "../../hooks/useCommunity";
@@ -9,6 +10,7 @@ export default function CommunityScreen() {
   const { posts, isLoading, hasMore, error, loadPosts, createPost, toggleLike } =
     useCommunity();
   const [showCreate, setShowCreate] = useState(false);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts(true);
@@ -23,7 +25,7 @@ export default function CommunityScreen() {
           <PostCard
             post={item}
             onLike={() => toggleLike(item.id, false)}
-            onComment={() => {}}
+            onComment={() => setActivePostId(item.id)}
           />
         )}
         onRefresh={() => loadPosts(true)}
@@ -66,6 +68,13 @@ export default function CommunityScreen() {
           await createPost(text, imageUri);
           setShowCreate(false);
         }}
+      />
+
+      <CommentsModal
+        visible={activePostId !== null}
+        postId={activePostId}
+        onClose={() => setActivePostId(null)}
+        onCommentAdded={() => {}}
       />
     </View>
   );
