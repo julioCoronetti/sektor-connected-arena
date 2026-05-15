@@ -5,17 +5,13 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { ARView } from "../../components/arena/ARView";
 import { PredictionCard } from "../../components/arena/PredictionCard";
 import { PressureBar } from "../../components/arena/PressureBar";
-import { API_WS_URL } from "../../constants/config";
+import { API_WS_URL, TEAMS } from "../../constants/config";
 import { useLocation } from "../../hooks/useLocation";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import {
   buildAnswerMessage,
   parseServerMessage,
 } from "../../services/arenaProtocol";
-import {
-  MOCK_MATCH,
-  startMockSimulator,
-} from "../../services/matchSimulator";
 import { useArenaStore } from "../../store/arenaStore";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -40,13 +36,18 @@ export default function ArenaScreen() {
   const { isInStadium, multiplier } = useLocation();
 
   useEffect(() => {
-    setMatch(MOCK_MATCH);
-    const stop = startMockSimulator(setActivePrediction, updatePressure);
+    // Estado inicial até o servidor enviar MATCH_STATE.
+    setMatch({
+      id: matchId ?? "unknown",
+      teamA: TEAMS[0],
+      teamB: TEAMS[1],
+      minute: 0,
+      status: "live",
+    });
     return () => {
-      stop();
       reset();
     };
-  }, [matchId, setMatch, setActivePrediction, updatePressure, reset]);
+  }, [matchId, setMatch, reset]);
 
   const handleMessage = useCallback(
     (raw: unknown) => {

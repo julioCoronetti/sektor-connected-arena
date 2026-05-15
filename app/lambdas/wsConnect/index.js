@@ -3,7 +3,8 @@ const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION });
 
 exports.handler = async (event) => {
-  const { connectionId } = event.requestContext;
+  console.log("EVENT:", JSON.stringify(event));
+  const { connectionId } = event.requestContext ?? {};
   const matchId = event.queryStringParameters?.matchId ?? "unknown";
 
   await dynamo.send(

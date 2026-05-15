@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "simulate": "npx ts-node scripts/simulate-match.ts"
+    "simulate": "npx ts-node --project scripts/tsconfig.json scripts/simulate-match.ts"
   },
   "dependencies": {
     "@aws-amplify/react-native": "^1.3.3",

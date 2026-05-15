@@ -46,11 +46,12 @@ A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.`;
 async function generatePrediction(prompt, event) {
   const response = await bedrock.send(
     new InvokeModelCommand({
-      modelId: "anthropic.claude-3-haiku-20240307-v1:0",
+      modelId: "amazon.nova-lite-v1:0",
       body: JSON.stringify({
-        anthropic_version: "bedrock-2023-05-31",
-        max_tokens: 256,
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "user", content: [{ text: prompt }] },
+        ],
+        inferenceConfig: { maxTokens: 256, temperature: 0.7 },
       }),
       contentType: "application/json",
       accept: "application/json",
@@ -58,7 +59,7 @@ async function generatePrediction(prompt, event) {
   );
 
   const body = JSON.parse(Buffer.from(response.body).toString());
-  const parsed = JSON.parse(body.content[0].text);
+  const parsed = JSON.parse(body.output.message.content[0].text);
 
   return {
     type: "PREDICTION",
