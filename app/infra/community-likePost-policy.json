@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "FindPostByIdIndex",
+      "Effect": "Allow",
+      "Action": "dynamodb:Query",
+      "Resource": "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-posts/index/id-index"
+    },
+    {
+      "Sid": "ReadAndIncrementPost",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-posts"
+    },
+    {
+      "Sid": "RecordLike",
+      "Effect": "Allow",
+      "Action": "dynamodb:PutItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-likes"
+    }
+  ]
+}

@@ -1,7 +1,9 @@
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   Text,
   TextInput,
@@ -21,16 +23,43 @@ export function CreatePostModal({
   onSubmit,
 }: CreatePostModalProps) {
   const [text, setText] = useState("");
+  const [imageUri, setImageUri] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = text.trim().length > 0 && !isSubmitting;
+
+  const handlePickImage = async () => {
+    if (isSubmitting) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== "granted") {
+      Alert.alert(
+        "Permissão necessária",
+        "Habilite acesso à galeria para anexar uma foto. Você ainda pode publicar sem imagem.",
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (isSubmitting) return;
+    setImageUri(undefined);
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(text.trim(), undefined);
+      await onSubmit(text.trim(), imageUri);
       setText("");
+      setImageUri(undefined);
     } catch {
       Alert.alert("Erro", "Não foi possível publicar. Tente novamente.");
     } finally {
@@ -88,6 +117,34 @@ export function CreatePostModal({
           editable={!isSubmitting}
           textAlignVertical="top"
         />
+        <View className="mt-4 flex-row items-center">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Anexar imagem"
+            onPress={handlePickImage}
+            disabled={isSubmitting}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-sektor-card"
+          >
+            <Text className="text-xl">📷</Text>
+          </TouchableOpacity>
+          {imageUri ? (
+            <View className="relative">
+              <Image
+                source={{ uri: imageUri }}
+                style={{ width: 80, height: 80, borderRadius: 8 }}
+              />
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Remover imagem"
+                onPress={handleRemoveImage}
+                disabled={isSubmitting}
+                className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full bg-black/70"
+              >
+                <Text className="text-xs font-bold text-white">X</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Modal>
   );
