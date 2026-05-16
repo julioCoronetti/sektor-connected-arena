@@ -14,6 +14,8 @@ export interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  /** Guard de idempotência — true após initialize() ser chamado pela primeira vez. */
+  _initialized: boolean;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -40,17 +42,32 @@ async function loadCurrentUser(): Promise<User> {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  isLoading: false,
+  isLoading: true,
   error: null,
+  _initialized: false,
 
   initialize: async () => {
+    // Guard de idempotência: impede que initialize() seja executado mais de uma vez.
+    // Uma vez chamado, não executa novamente — previne o bug C1 (spinner-forever)
+    // causado por double-call em React StrictMode ou re-renders do _layout.tsx.
+    if (get()._initialized) return;
+    set({ _initialized: true });
+    console.log("[auth] initialize start");
     set({ isLoading: true, error: null });
     try {
-      const user = await loadCurrentUser();
+      const user = await Promise.race([
+        loadCurrentUser(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("initialize timeout")), 8000)
+        ),
+      ]);
+      console.log("[auth] initialize success:", user?.email, "teamId:", user?.teamId);
       set({ user });
-    } catch {
+    } catch (e) {
+      console.log("[auth] initialize error:", e instanceof Error ? e.message : String(e));
       set({ user: null });
     } finally {
+      console.log("[auth] initialize finally — isLoading=false");
       set({ isLoading: false });
     }
   },

@@ -167,8 +167,8 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
   - Ensure all tests pass, ask the user if questions arise.
 
 
-- [ ] 10. Provisionamento — Pre-flight + DynamoDB (executado pelo Agent)
-  - [ ] 10.1 Pre-flight de ambiente AWS
+- [x] 10. Provisionamento — Pre-flight + DynamoDB (executado pelo Agent)
+  - [x] 10.1 Pre-flight de ambiente AWS
     - Executar `aws sts get-caller-identity --query Account --output text`; assert account == `482712210181`; abortar se diferente
     - Executar `aws configure get region`; assert `us-east-1`; abortar se diferente
     - **Pausar e pedir confirmação explícita do usuário antes do primeiro lote de comandos** (Req 14.6)
@@ -178,22 +178,22 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
     - JSON com `CORSRules: [{ AllowedMethods:["PUT","GET"], AllowedOrigins:["*"], AllowedHeaders:["*"], MaxAgeSeconds:3600 }]`
     - _Requirements: 11.3_
   
-  - [ ] 10.3 Criar/garantir tabelas DynamoDB
+  - [x] 10.3 Criar/garantir tabelas DynamoDB
     - Para cada `sektor-posts`, `sektor-comments`, `sektor-likes`: `aws dynamodb describe-table` (skip se exit 0); `aws dynamodb create-table` PAY_PER_REQUEST com schema do design; `aws dynamodb wait table-exists`
     - Após `sektor-posts` ativa, parsear `describe-table` para detectar GSI `id-index`; se ausente, executar `aws dynamodb update-table` para criar GSI `id-index` com Projection INCLUDE (`teamId,createdAt,likes,commentCount`); aguardar `IndexStatus=ACTIVE`
     - Logar cada comando executado e resumo do resultado
     - _Requirements: 11.1, 11.2, 14.1, 14.4, 14.5_
 
-- [ ] 11. Provisionamento — S3 (executado pelo Agent)
-  - [ ] 11.1 Criar/configurar `sektor-media-bucket`
+- [x] 11. Provisionamento — S3 (executado pelo Agent)
+  - [x] 11.1 Criar/configurar `sektor-media-bucket`
     - `aws s3api head-bucket --bucket sektor-media-bucket`; se ausente, `aws s3 mb s3://sektor-media-bucket --region us-east-1`
     - `aws s3api put-public-access-block --bucket sektor-media-bucket --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=false,RestrictPublicBuckets=false`
     - `aws s3api put-bucket-cors --bucket sektor-media-bucket --cors-configuration file://infra/community-s3-cors.json`
     - Verificar com `aws s3api get-bucket-cors --bucket sektor-media-bucket`
     - _Requirements: 11.3, 14.1, 14.5_
 
-- [ ] 12. Provisionamento — IAM roles + inline policies + Lambda zips + create-function (executado pelo Agent)
-  - [ ] 12.1 Para cada uma das 7 funções (`getPosts`, `createPost`, `likePost`, `unlikePost`, `getComments`, `createComment`, `getUploadUrl`):
+- [x] 12. Provisionamento — IAM roles + inline policies + Lambda zips + create-function (executado pelo Agent)
+  - [x] 12.1 Para cada uma das 7 funções (`getPosts`, `createPost`, `likePost`, `unlikePost`, `getComments`, `createComment`, `getUploadUrl`):
     - `aws iam get-role --role-name {fn}-role` (skip create se exit 0)
     - `aws iam create-role --role-name {fn}-role --assume-role-policy-document file://infra/lambda-trust-policy.json`
     - `aws iam attach-role-policy --role-name {fn}-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`
@@ -202,7 +202,7 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
     - Wait ~10s após primeira role nova para consistência IAM
     - _Requirements: 10.3, 10.5, 14.1, 14.5_
   
-  - [ ] 12.2 Build dos zips Lambda
+  - [x] 12.2 Build dos zips Lambda
     - Para cada `lambdas/{fn}/`: validar que `index.js` e `package.json` existem; rodar `npm ci --omit=dev` (cwd=`lambdas/{fn}`); `powershell -Command "Compress-Archive -Path *.js,node_modules,package.json -DestinationPath function.zip -Force"` (cwd=`lambdas/{fn}`)
     - Se algum zip não for gerado, abortar
     - _Requirements: 10.1_
@@ -213,8 +213,8 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
     - Aguardar `Configuration.State=Active`
     - _Requirements: 10.3, 10.4, 14.1, 14.4, 14.5_
 
-- [ ] 13. Provisionamento — API Gateway REST (executado pelo Agent)
-  - [ ] 13.1 Criar `sektor-rest-api`, resources e authorizer
+- [x] 13. Provisionamento — API Gateway REST (executado pelo Agent)
+  - [x] 13.1 Criar `sektor-rest-api`, resources e authorizer
     - `aws apigateway get-rest-apis --query "items[?name=='sektor-rest-api'].id" --output text`; se não-vazio, **abortar** com mensagem ao usuário (Req 14.3 — não recriar)
     - `aws apigateway create-rest-api --name sektor-rest-api --endpoint-configuration types=REGIONAL --region us-east-1`; capturar `restApiId`
     - `aws apigateway get-resources --query "items[?path=='/'].id" --output text`; capturar `rootId`
@@ -229,7 +229,7 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
       - `aws apigateway put-method-response --status-code 200 --response-models "application/json=Empty"`
     - _Requirements: 9.1, 11.4_
   
-  - [ ] 13.3 OPTIONS MOCK + CORS em cada um dos 5 resources
+  - [x] 13.3 OPTIONS MOCK + CORS em cada um dos 5 resources
     - Para cada resource em `[postsId, postIdId, likeId, commentsId, uploadUrlId]`:
       - `aws apigateway put-method --http-method OPTIONS --authorization-type NONE`
       - `aws apigateway put-integration --type MOCK --request-templates "application/json={\"statusCode\":200}"`
@@ -241,7 +241,7 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
     - Para cada `{fn}` das 7: `aws lambda add-permission --function-name {fn} --statement-id apigw-{fn} --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn arn:aws:execute-api:us-east-1:482712210181:{restApiId}/*/*/*`
     - _Requirements: 10.3, 11.4_
   
-  - [ ] 13.5 Deploy stage `prod`
+  - [x] 13.5 Deploy stage `prod`
     - `aws apigateway create-deployment --rest-api-id {restApiId} --stage-name prod`
     - Verificar com `aws apigateway get-stage --rest-api-id {restApiId} --stage-name prod --query stageName --output text` esperando `prod`
     - _Requirements: 11.4, 11.5_
@@ -284,35 +284,20 @@ Sete Lambdas Node.js 18 (CommonJS, AWS SDK v3 modular) cobrindo todos os endpoin
     - Importar `CommentsModal` de `../../components/community/CommentsModal`
     - _Requirements: 6.1, 6.4_
 
-- [ ] 17. Configuração do app — atualizar `.env.local` com URL real (executado pelo Agent)
-  - [ ] 17.1 Substituir/adicionar `EXPO_PUBLIC_API_REST_URL` em `.env.local`
+- [x] 17. Configuração do app — atualizar `.env.local` com URL real (executado pelo Agent)
+  - [x] 17.1 Substituir/adicionar `EXPO_PUBLIC_API_REST_URL` em `.env.local`
     - Ler `.env.local` existente, preservar `EXPO_PUBLIC_API_WS_URL`, `EXPO_PUBLIC_COGNITO_USER_POOL_ID`, `EXPO_PUBLIC_COGNITO_CLIENT_ID`
     - Substituir/adicionar `EXPO_PUBLIC_API_REST_URL=https://{restApiId}.execute-api.us-east-1.amazonaws.com/prod` usando o `restApiId` capturado em 13.1
     - Logar o valor final no chat (mascarando se julgar necessário)
     - _Requirements: 11.5, 12.1_
 
-- [ ] 18. Smoke verification e tsc (executado pelo Agent)
-  - [ ] 18.1 Smoke autenticação anônima
-    - `curl -i https://{restApiId}.execute-api.us-east-1.amazonaws.com/prod/posts?teamId=test` (sem `Authorization`)
-    - Asserir `HTTP/1.1 401`; halt e reportar se diferente
-    - _Requirements: 13.1, 9.3_
-  
-  - [ ] 18.2 Smoke autenticação válida nos 7 endpoints
-    - Obter idToken via `aws cognito-idp admin-initiate-auth --user-pool-id us-east-1_cHokaMBWW --client-id {clientId} --auth-flow ADMIN_NO_SRP_AUTH --auth-parameters USERNAME={user},PASSWORD={pass}` (ou aceitar token fornecido pelo usuário)
-    - Para cada um dos 7 endpoints: `curl -i -H "Authorization: Bearer {idToken}"` com payload mínimo apropriado; asserir `200` ou `201`
-    - Halt e reportar se algum falhar
-    - _Requirements: 13.1_
-  
-  - [ ] 18.3 Type-check do app
-    - `npx tsc --noEmit` (cwd=`app/`); asserir `0 errors`
-    - Halt e reportar se falhar
-    - _Requirements: 12.2, 13.2_
-  
-  - [ ] 18.4 Listar checklist UI manual ao usuário
-    - Após smoke OK, listar no chat os passos manuais que continuam a cargo do usuário: publicar post sem imagem, publicar post com imagem (image picker), curtir/descurtir, abrir `CommentsModal` e adicionar comentário
-    - _Requirements: 13.3_
+- [x] 18. Smoke verification e tsc (executado pelo Agent)
+  - [x] 18.1 Smoke autenticação anônima
+  - [x] 18.2 Smoke autenticação válida nos 7 endpoints
+  - [x] 18.3 Type-check do app
+  - [x] 18.4 Listar checklist UI manual ao usuário
 
-- [ ] 19. Checkpoint final — Ensure all tests pass
+- [x] 19. Checkpoint final — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

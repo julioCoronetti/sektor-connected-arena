@@ -1,8 +1,16 @@
+import "react-native-get-random-values";
+import "@aws-amplify/react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { LogBox } from "react-native";
 
 import "../global.css";
 import { useAuthStore } from "../store/authStore";
+
+// Suprime warning de prop deprecada originado por dependência de terceiros.
+// Candidatos: react-native-reanimated ~4.1.1, @react-navigation/elements ^2.6.3,
+// expo-router ~6.0.23. Remover quando a dependência for atualizada.
+LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 
 export default function RootLayout() {
   const user = useAuthStore((s) => s.user);
@@ -10,29 +18,37 @@ export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const segments = useSegments();
   const router = useRouter();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    console.log("[layout] calling initialize (once)");
     initialize();
   }, [initialize]);
 
-  // Auth gate: redireciona via router em vez de retornar <Redirect>, para
-  // evitar trocas da árvore raiz que disparam loops de mount/unmount em
-  // hooks como usePreventRemove do React Navigation.
   useEffect(() => {
+    console.log("[layout] auth effect — isLoading:", isLoading, "user:", user?.email ?? null, "teamId:", user?.teamId ?? null, "segments:", segments);
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
     const onSelectTeam = inAuthGroup && segments[1] === "select-team";
+    const inTabsGroup = segments[0] === "(tabs)";
 
-    if (!user && !inAuthGroup) {
-      router.replace("/login");
-    } else if (user && inAuthGroup && !onSelectTeam) {
-      router.replace("/community");
+    if (!user) {
+      // Não logado — vai para login
+      if (!inAuthGroup) router.replace("/login");
+    } else if (!user.teamId) {
+      // Logado mas sem time — vai para seleção de time
+      if (!onSelectTeam) router.replace("/select-team");
+    } else {
+      // Logado com time — vai para community se estiver em auth ou na raiz
+      if (inAuthGroup || segments.length < 1 || (!inTabsGroup && segments[0] !== "arena")) {
+        router.replace("/community");
+      }
     }
   }, [user, isLoading, segments, router]);
 
-  // Sempre retornar o mesmo Stack: declarar grupos é necessário para que o
-  // navigator raiz reconheça rotas como "(auth)" durante REPLACE.
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
