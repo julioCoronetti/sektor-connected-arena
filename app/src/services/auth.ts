@@ -5,9 +5,11 @@ import "@aws-amplify/react-native";
 
 import { Amplify } from "aws-amplify";
 import {
+  confirmSignUp,
   fetchAuthSession,
   fetchUserAttributes,
   getCurrentUser,
+  resendSignUpCode,
   signIn,
   signOut,
   signUp,
@@ -30,9 +32,11 @@ Amplify.configure({
 void AWS_REGION; // mantém a importação viva caso outros serviços passem a usar.
 
 export {
+  confirmSignUp,
   fetchAuthSession,
   fetchUserAttributes,
   getCurrentUser,
+  resendSignUpCode,
   signIn,
   signOut,
   signUp,

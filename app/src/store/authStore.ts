@@ -1,14 +1,17 @@
 import { create } from "zustand";
 
 import {
+  confirmSignUp as confirmSignUpService,
   fetchUserAttributes,
   getCurrentUser,
+  resendSignUpCode,
   signIn,
   signOut,
   signUp,
   updateUserAttributes,
 } from "../services/auth";
 import type { User } from "../types";
+import { mapCognitoError } from "../utils/cognitoErrorMapper";
 
 export interface AuthState {
   user: User | null;
@@ -19,14 +22,15 @@ export interface AuthState {
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  confirmSignUp: (email: string, code: string) => Promise<void>;
+  resendCode: (email: string) => Promise<void>;
   setTeam: (teamId: string) => Promise<void>;
   logout: () => Promise<void>;
-}
 
-function errorMessage(e: unknown, fallback: string): string {
-  if (e instanceof Error) return e.message;
-  if (typeof e === "string") return e;
-  return fallback;
+  /** Callback de navegação imperativa injetado pelo layout (auth). Null quando não injetado. */
+  _onNavigate: ((path: string) => void) | null;
+  /** Injeta o callback de navegação. Chamado pelo _layout.tsx no useEffect de montagem. */
+  _setNavigate: (fn: (path: string) => void) => void;
 }
 
 async function loadCurrentUser(): Promise<User> {
@@ -45,6 +49,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   error: null,
   _initialized: false,
+  _onNavigate: null,
+  _setNavigate: (fn) => set({ _onNavigate: fn }),
 
   initialize: async () => {
     // Guard de idempotência: impede que initialize() seja executado mais de uma vez.
@@ -89,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await loadCurrentUser();
       set({ user });
     } catch (e) {
-      set({ error: errorMessage(e, "Erro ao fazer login") });
+      set({ error: mapCognitoError(e) });
     } finally {
       set({ isLoading: false });
     }
@@ -98,34 +104,72 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (name, email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const signUpResult = await signUp({
-        username: email,
-        password,
-        options: { userAttributes: { name, email } },
-      });
+      const result = await Promise.race([
+        signUp({
+          username: email,
+          password,
+          options: { userAttributes: { name, email } },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("register timeout")), 10_000)
+        ),
+      ]);
 
-      // Se o pool exige confirmação por e-mail, não há sessão para carregar atributos.
-      if (!signUpResult.isSignUpComplete) {
-        set({
-          error:
-            "Conta criada. Confirme o código enviado para seu e-mail antes de entrar.",
-        });
-        return;
+      if (result.isSignUpComplete) {
+        // Cadastro completo (pool sem confirmação) — fazer login automático
+        try {
+          const signInResult = await signIn({ username: email, password });
+          if (signInResult.isSignedIn) {
+            const user = await loadCurrentUser();
+            set({ user });
+            get()._onNavigate?.("/select-team");
+          } else {
+            set({ error: mapCognitoError(signInResult) });
+          }
+        } catch (e) {
+          set({ error: mapCognitoError(e) });
+        }
+      } else {
+        // Confirmação necessária → fluxo normal
+        get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
       }
-
-      const signInResult = await signIn({ username: email, password });
-      if (!signInResult.isSignedIn) {
-        set({
-          error:
-            "Conta criada, mas é preciso confirmar o e-mail antes de entrar.",
-        });
-        return;
-      }
-
-      const user = await loadCurrentUser();
-      set({ user });
     } catch (e) {
-      set({ error: errorMessage(e, "Erro ao criar conta") });
+      if ((e as { name?: string }).name === "UsernameExistsException") {
+        // Fallback: usuário já existe mas não verificou o e-mail
+        try {
+          await resendSignUpCode({ username: email });
+          set({ error: null });
+          get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
+        } catch (e2) {
+          set({ error: mapCognitoError(e2) });
+        }
+      } else {
+        set({ error: mapCognitoError(e) });
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  confirmSignUp: async (email, code) => {
+    set({ isLoading: true, error: null });
+    try {
+      await confirmSignUpService({ username: email, confirmationCode: code });
+      get()._onNavigate?.("/select-team");
+    } catch (e) {
+      set({ error: mapCognitoError(e) });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  resendCode: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      await resendSignUpCode({ username: email });
+      set({ error: "Código reenviado para seu e-mail." });
+    } catch (e) {
+      set({ error: mapCognitoError(e) });
     } finally {
       set({ isLoading: false });
     }
@@ -141,7 +185,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: state.user ? { ...state.user, teamId } : null,
       }));
     } catch (e) {
-      set({ error: errorMessage(e, "Erro ao salvar time") });
+      set({ error: mapCognitoError(e) });
       throw e;
     }
   },

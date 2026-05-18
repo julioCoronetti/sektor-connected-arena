@@ -1,4 +1,4 @@
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,7 +17,6 @@ export default function RegisterScreen() {
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
-  const router = useRouter();
 
   const canSubmit =
     name.trim().length > 0 &&
@@ -27,10 +26,6 @@ export default function RegisterScreen() {
 
   const handleSubmit = async () => {
     await register(name.trim(), email.trim(), password);
-    const state = useAuthStore.getState();
-    if (state.user && !state.error) {
-      router.replace("/select-team");
-    }
   };
 
   return (

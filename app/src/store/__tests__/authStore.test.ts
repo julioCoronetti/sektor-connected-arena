@@ -264,7 +264,9 @@ describe("authStore — Preservation (Property 2)", () => {
     expect(state.user).toBeNull();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeTruthy();
-    expect(state.error).toContain("NotAuthorizedException");
+    // Task 3.2 substituiu errorMessage por mapCognitoError — o store agora
+    // armazena a mensagem PT-BR, não o código Cognito original.
+    expect(state.error).toBe("E-mail ou senha incorretos.");
   });
 
   /**
