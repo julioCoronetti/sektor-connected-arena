@@ -11,7 +11,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { useAuthStore } from "../../store/authStore";
 
 export default function ConfirmScreen() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, password } = useLocalSearchParams<{ email: string; password?: string }>();
   const [code, setCode] = useState("");
 
   const confirmSignUp = useAuthStore((s) => s.confirmSignUp);
@@ -34,7 +34,7 @@ export default function ConfirmScreen() {
 
   const handleConfirm = async () => {
     if (!email) return;
-    await confirmSignUp(email, code);
+    await confirmSignUp(email, code, password);
   };
 
   const handleResend = async () => {

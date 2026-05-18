@@ -22,7 +22,7 @@ export interface AuthState {
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  confirmSignUp: (email: string, code: string) => Promise<void>;
+  confirmSignUp: (email: string, code: string, password?: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
   setTeam: (teamId: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -95,6 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await loadCurrentUser();
       set({ user });
     } catch (e) {
+      console.log("[auth] login error:", e instanceof Error ? `${e.name}: ${e.message}` : String(e));
       set({ error: mapCognitoError(e) });
     } finally {
       set({ isLoading: false });
@@ -108,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         signUp({
           username: email,
           password,
-          options: { userAttributes: { name, email } },
+          options: { userAttributes: { name } },
         }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("register timeout")), 10_000)
@@ -131,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       } else {
         // Confirmação necessária → fluxo normal
-        get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
+        get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
       }
     } catch (e) {
       if ((e as { name?: string }).name === "UsernameExistsException") {
@@ -139,7 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
           await resendSignUpCode({ username: email });
           set({ error: null });
-          get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
+          get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
         } catch (e2) {
           set({ error: mapCognitoError(e2) });
         }
@@ -151,10 +152,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  confirmSignUp: async (email, code) => {
+  confirmSignUp: async (email, code, password?: string) => {
     set({ isLoading: true, error: null });
     try {
       await confirmSignUpService({ username: email, confirmationCode: code });
+      // Após confirmar, fazer login automático se a senha foi fornecida
+      if (password) {
+        try {
+          const signInResult = await signIn({ username: email, password });
+          if (signInResult.isSignedIn) {
+            const user = await loadCurrentUser();
+            set({ user });
+          }
+        } catch {
+          // Login automático falhou — o guard do _layout vai redirecionar para /login
+        }
+      }
       get()._onNavigate?.("/select-team");
     } catch (e) {
       set({ error: mapCognitoError(e) });
