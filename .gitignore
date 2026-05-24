@@ -1,0 +1,4 @@
+# Lambdas — dependências e artefatos de build
+lambdas/*/node_modules/
+lambdas/*/.build/
+lambdas/*/dist/
