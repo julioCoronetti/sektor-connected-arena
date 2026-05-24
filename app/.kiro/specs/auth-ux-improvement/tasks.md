@@ -6,8 +6,8 @@ Implementação incremental das melhorias de UX no fluxo de autenticação do Se
 
 ## Tasks
 
-- [ ] 1. Criar módulos de validação
-  - [ ] 1.1 Implementar `src/utils/validators/email.ts`
+- [x] 1. Criar módulos de validação
+  - [x] 1.1 Implementar `src/utils/validators/email.ts`
     - Exportar `isValidEmail(value: string): boolean` usando o regex `^[^\s@]+@[^\s@]+\.[^\s@]+$`
     - _Requirements: 3.1, 3.4, 3.5_
 
@@ -19,7 +19,7 @@ Implementação incremental das melhorias de UX no fluxo de autenticação do Se
     - Usar `fast-check` com `fc.emailAddress()` para P1 e strings sem `@` / com espaços para P2
     - Arquivo: `src/utils/validators/__tests__/email.test.ts`
 
-  - [ ] 1.3 Implementar `src/utils/validators/password.ts`
+  - [x] 1.3 Implementar `src/utils/validators/password.ts`
     - Exportar tipos `PasswordLevel` e `PasswordStrength`
     - Exportar `getPasswordStrength(password: string): PasswordStrength` com os quatro níveis mutuamente exclusivos conforme design
     - _Requirements: 4.2, 4.3, 4.4, 4.5, 4.6_
@@ -32,18 +32,18 @@ Implementação incremental das melhorias de UX no fluxo de autenticação do Se
     - Arquivo: `src/utils/validators/__tests__/password.test.ts`
 
 - [ ] 2. Criar componentes UI reutilizáveis
-  - [ ] 2.1 Implementar `src/components/ui/InlineError.tsx`
+  - [x] 2.1 Implementar `src/components/ui/InlineError.tsx`
     - Props: `message: string | null`, `testID?: string`
     - Renderiza `null` quando `message` é nulo ou vazio; caso contrário exibe texto em `text-red-400`
     - _Requirements: 3.2, 5.2_
 
-  - [ ] 2.2 Implementar `src/components/ui/AlertBanner.tsx`
+  - [x] 2.2 Implementar `src/components/ui/AlertBanner.tsx`
     - Props: `message: string | null`, `type: "error" | "success"`, `testID?: string`
     - Renderiza `null` quando `message` é nulo
     - Estilos distintos para `error` (fundo `bg-red-900/30`, borda `border-red-500`) e `success` (fundo `bg-green-900/30`, borda `border-green-500`)
     - _Requirements: 11.1, 11.2, 11.3, 8.5_
 
-  - [ ] 2.3 Implementar `src/components/ui/ToggleSenha.tsx`
+  - [x] 2.3 Implementar `src/components/ui/ToggleSenha.tsx`
     - Props: `isVisible: boolean`, `onToggle: () => void`, `testID?: string`
     - Ícone `Eye` (Lucide) quando `isVisible=false`, `EyeOff` quando `isVisible=true`
     - `accessibilityLabel`: `"Mostrar senha"` / `"Ocultar senha"` conforme estado
@@ -62,8 +62,8 @@ Implementação incremental das melhorias de UX no fluxo de autenticação do Se
     - **Validates: Requirements 4.7, 4.8**
     - Arquivo: `src/components/ui/__tests__/PasswordStrengthIndicator.test.tsx`
 
-- [ ] 3. Criar hook `useCooldown`
-  - [ ] 3.1 Implementar `src/hooks/useCooldown.ts`
+- [x] 3. Criar hook `useCooldown`
+  - [x] 3.1 Implementar `src/hooks/useCooldown.ts`
     - Retorna `{ remaining: number, isActive: boolean, start: () => void }`
     - Contagem regressiva de `durationSeconds` até 0 usando `setInterval` de 1s
     - Limpa o intervalo ao desmontar ou quando `isActive` se torna `false`
@@ -90,8 +90,8 @@ Implementação incremental das melhorias de UX no fluxo de autenticação do Se
 - [ ] 5. Checkpoint — Fundações prontas
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Atualizar `config.ts` com campo `description` nos times
-  - [ ] 6.1 Adicionar campo `description` à constante `TEAMS` em `config.ts`
+- [x] 6. Atualizar `config.ts` com campo `description` nos times
+  - [x] 6.1 Adicionar campo `description` à constante `TEAMS` em `config.ts`
     - Máximo 80 caracteres por time
     - _Requirements: 10.3_
 

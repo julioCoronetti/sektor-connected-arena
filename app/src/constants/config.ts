@@ -15,8 +15,18 @@ export const STADIUM_COORDS = {
 };
 
 export const TEAMS = [
-  { id: "team-a", name: "Time A", color: "#E63946" },
-  { id: "team-b", name: "Time B", color: "#1D3557" },
+  {
+    id: "team-a",
+    name: "Time A",
+    color: "#E63946",
+    description: "Os guerreiros do setor vermelho. Paixão e garra em cada partida.",
+  },
+  {
+    id: "team-b",
+    name: "Time B",
+    color: "#1D3557",
+    description: "A força do setor azul. Tradição e estratégia no DNA do clube.",
+  },
 ] as const;
 
 export const DEMO_MATCH_ID = "match-001";

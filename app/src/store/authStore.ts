@@ -1,10 +1,12 @@
 import { create } from "zustand";
 
 import {
+  confirmResetPassword,
   confirmSignUp as confirmSignUpService,
   fetchUserAttributes,
   getCurrentUser,
   resendSignUpCode,
+  resetPassword,
   signIn,
   signOut,
   signUp,
@@ -17,6 +19,12 @@ export interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  /** Senha temporária em memória para o fluxo register → confirm. */
+  pendingPassword: string | null;
+  /** Mensagem de sucesso de reenvio de código (distinta de error). */
+  resendSuccessMessage: string | null;
+  /** Mensagem de sucesso exibida na tela de login após reset de senha. */
+  loginSuccessMessage: string | null;
   /** Guard de idempotência — true após initialize() ser chamado pela primeira vez. */
   _initialized: boolean;
   initialize: () => Promise<void>;
@@ -24,6 +32,8 @@ export interface AuthState {
   register: (name: string, email: string, password: string) => Promise<void>;
   confirmSignUp: (email: string, code: string, password?: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  confirmForgotPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   setTeam: (teamId: string) => Promise<void>;
   logout: () => Promise<void>;
 
@@ -48,6 +58,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   error: null,
+  pendingPassword: null,
+  resendSuccessMessage: null,
+  loginSuccessMessage: null,
   _initialized: false,
   _onNavigate: null,
   _setNavigate: (fn) => set({ _onNavigate: fn }),
@@ -79,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (email, password) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, loginSuccessMessage: null });
     try {
       const result = await signIn({ username: email, password });
       if (!result.isSignedIn) {
@@ -131,16 +144,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ error: mapCognitoError(e) });
         }
       } else {
-        // Confirmação necessária → fluxo normal
-        get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+        // Confirmação necessária → armazenar senha em memória e navegar sem expô-la na URL
+        set({ pendingPassword: password });
+        get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
       }
     } catch (e) {
       if ((e as { name?: string }).name === "UsernameExistsException") {
         // Fallback: usuário já existe mas não verificou o e-mail
         try {
           await resendSignUpCode({ username: email });
-          set({ error: null });
-          get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+          // Armazenar senha em memória e navegar sem expô-la na URL
+          set({ pendingPassword: password, error: null });
+          get()._onNavigate?.(`/confirm?email=${encodeURIComponent(email)}`);
         } catch (e2) {
           set({ error: mapCognitoError(e2) });
         }
@@ -154,12 +169,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   confirmSignUp: async (email, code, password?: string) => {
     set({ isLoading: true, error: null });
+
+    // Resolver a senha: parâmetro explícito tem prioridade, depois pendingPassword do store
+    const resolvedPassword = password ?? get().pendingPassword;
+
+    // Rastrear falhas consecutivas via closure local usando uma variável no store
+    // Usamos uma abordagem simples: lemos o estado atual de falhas do store
+    const currentState = get() as AuthState & { _confirmFailCount?: number };
+    const failCount = currentState._confirmFailCount ?? 0;
+
     try {
       await confirmSignUpService({ username: email, confirmationCode: code });
-      // Após confirmar, fazer login automático se a senha foi fornecida
-      if (password) {
+      // Sucesso: limpar pendingPassword e contador de falhas
+      set({ pendingPassword: null, ...(({ _confirmFailCount: 0 }) as unknown as Partial<AuthState>) });
+      // Após confirmar, fazer login automático se a senha foi resolvida
+      if (resolvedPassword) {
         try {
-          const signInResult = await signIn({ username: email, password });
+          const signInResult = await signIn({ username: email, password: resolvedPassword });
           if (signInResult.isSignedIn) {
             const user = await loadCurrentUser();
             set({ user });
@@ -170,17 +196,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       get()._onNavigate?.("/select-team");
     } catch (e) {
-      set({ error: mapCognitoError(e) });
+      const newFailCount = failCount + 1;
+      // Após 3 falhas consecutivas, limpar pendingPassword
+      if (newFailCount >= 3) {
+        set({
+          error: mapCognitoError(e),
+          pendingPassword: null,
+          ...(({ _confirmFailCount: 0 }) as unknown as Partial<AuthState>),
+        });
+      } else {
+        set({
+          error: mapCognitoError(e),
+          ...(({ _confirmFailCount: newFailCount }) as unknown as Partial<AuthState>),
+        });
+      }
     } finally {
       set({ isLoading: false });
     }
   },
 
   resendCode: async (email) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, resendSuccessMessage: null });
     try {
       await resendSignUpCode({ username: email });
-      set({ error: "Código reenviado para seu e-mail." });
+      // Sucesso: usar resendSuccessMessage em vez de error
+      set({ resendSuccessMessage: "Código reenviado para seu e-mail." });
+    } catch (e) {
+      set({ error: mapCognitoError(e) });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      await resetPassword({ username: email });
+      get()._onNavigate?.(`/reset-password?email=${encodeURIComponent(email)}`);
+    } catch (e) {
+      set({ error: mapCognitoError(e) });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  confirmForgotPassword: async (email, code, newPassword) => {
+    set({ isLoading: true, error: null });
+    try {
+      await confirmResetPassword({ username: email, confirmationCode: code, newPassword });
+      set({ loginSuccessMessage: "Senha redefinida com sucesso. Faça login." });
+      get()._onNavigate?.("/login");
     } catch (e) {
       set({ error: mapCognitoError(e) });
     } finally {
