@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
-import { useColorScheme } from "nativewind";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, useColorScheme, View } from "react-native";
 
 const LOGO_DARK = require("../../assets/images/logo-dark.png");
 const LOGO_LIGHT = require("../../assets/images/logo-light.png");
@@ -8,7 +7,7 @@ const LOGO_LIGHT = require("../../assets/images/logo-light.png");
 // O auth gate em _layout.tsx redireciona para /login ou /community após
 // initialize(). Esta tela exibe logo + spinner durante esse intervalo.
 export default function Index() {
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme !== "light";
 
   return (

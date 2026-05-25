@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
 import { Link } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -23,6 +23,7 @@ import { useAuthStore } from "../../store/authStore";
 import { isValidEmail } from "../../utils/validators/email";
 import { getPasswordStrength } from "../../utils/validators/password";
 
+// logo-dark = texto branco → fundo escuro | logo-light = texto preto → fundo claro
 const LOGO_DARK = require("../../../assets/images/logo-dark.png");
 const LOGO_LIGHT = require("../../../assets/images/logo-light.png");
 
@@ -40,8 +41,17 @@ export default function RegisterScreen() {
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme !== "light";
+
+  // Cores adaptadas ao tema
+  const bg = isDark ? "#0F0F0F" : "#F5F5F5";
+  const surface = isDark ? "#1A1A1A" : "#FFFFFF";
+  const border = isDark ? "#2A2A2A" : "#E0E0E0";
+  const textColor = isDark ? "#F5F5F5" : "#111111";
+  const mutedColor = isDark ? "#888888" : "#666666";
+  const placeholderColor = isDark ? "#666666" : "#AAAAAA";
+  const disabledBg = isDark ? "#2A2A2A" : "#CCCCCC";
 
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -82,45 +92,56 @@ export default function RegisterScreen() {
     await register(name.trim(), email.trim(), password);
   };
 
+  const inputStyle = {
+    backgroundColor: surface,
+    borderWidth: 1,
+    borderColor: border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: textColor,
+  };
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: bg }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <Animated.View entering={FadeIn.duration(300)} className="flex-1 bg-sektor-bg">
+      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: bg }}>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: "center",
-            paddingHorizontal: 24,
-            paddingTop: insets.top + 16,
-            paddingBottom: insets.bottom + 24,
+            paddingHorizontal: 28,
+            paddingTop: insets.top + 24,
+            paddingBottom: insets.bottom + 16,
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
           <View style={{ alignItems: "center", marginBottom: 36 }}>
             <Image
               source={isDark ? LOGO_DARK : LOGO_LIGHT}
-              style={{ width: 140, height: 46 }}
+              style={{ width: 160, height: 52 }}
               contentFit="contain"
               accessibilityLabel="Sektor logo"
             />
           </View>
 
-          <Text className="mb-1 text-2xl font-bold text-sektor-text">
+          <Text style={{ fontSize: 24, fontWeight: "700", color: textColor, marginBottom: 4 }}>
             Criar conta
           </Text>
-          <Text className="mb-8 text-sektor-muted">
+          <Text style={{ fontSize: 14, color: mutedColor, marginBottom: 24 }}>
             Junte-se à arena
           </Text>
 
           {/* Nome */}
           <TextInput
             testID="register-name-input"
-            className="mb-4 rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
+            style={{ ...inputStyle, marginBottom: 12 }}
             placeholder="Nome"
-            placeholderTextColor="#888888"
+            placeholderTextColor={placeholderColor}
             value={name}
             onChangeText={(v) => { setName(v); clearStoreError(); }}
             autoCapitalize="words"
@@ -133,9 +154,9 @@ export default function RegisterScreen() {
           <TextInput
             testID="register-email-input"
             ref={emailRef}
-            className="mb-1 rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
+            style={{ ...inputStyle, marginBottom: 4 }}
             placeholder="E-mail"
-            placeholderTextColor="#888888"
+            placeholderTextColor={placeholderColor}
             value={email}
             onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null); clearStoreError(); }}
             onBlur={handleEmailBlur}
@@ -149,13 +170,13 @@ export default function RegisterScreen() {
           <InlineError message={emailError} />
 
           {/* Senha */}
-          <View className="relative mb-1">
+          <View style={{ position: "relative", marginBottom: 4 }}>
             <TextInput
               testID="register-password-input"
               ref={passwordRef}
-              className="rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
+              style={{ ...inputStyle, paddingRight: 52 }}
               placeholder="Senha"
-              placeholderTextColor="#888888"
+              placeholderTextColor={placeholderColor}
               value={password}
               onChangeText={(v) => { setPassword(v); clearStoreError(); }}
               secureTextEntry={!showPassword}
@@ -172,13 +193,13 @@ export default function RegisterScreen() {
           <PasswordStrengthIndicator password={password} />
 
           {/* Confirmar senha */}
-          <View className="relative mb-1">
+          <View style={{ position: "relative", marginBottom: 4 }}>
             <TextInput
               testID="register-confirm-password-input"
               ref={confirmRef}
-              className="rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
+              style={{ ...inputStyle, paddingRight: 52 }}
               placeholder="Confirmar senha"
-              placeholderTextColor="#888888"
+              placeholderTextColor={placeholderColor}
               value={confirmPassword}
               onChangeText={(v) => { setConfirmPassword(v); if (confirmError) setConfirmError(null); clearStoreError(); }}
               onBlur={handleConfirmBlur}
@@ -197,16 +218,22 @@ export default function RegisterScreen() {
 
           <AlertBanner message={error} type="error" testID="register-error" />
 
+          {/* Botão criar conta */}
           <TouchableOpacity
             testID="register-submit-button"
             accessibilityRole="button"
             style={{
-              backgroundColor: canSubmit ? "#CC0000" : "#2A2A2A",
+              backgroundColor: canSubmit ? "#CC0000" : disabledBg,
               borderRadius: 14,
-              paddingVertical: 14,
+              paddingVertical: 15,
               alignItems: "center",
               marginTop: 8,
               marginBottom: 12,
+              shadowColor: canSubmit ? "#CC0000" : "transparent",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: canSubmit ? 4 : 0,
             }}
             onPress={handleSubmit}
             disabled={!canSubmit}
@@ -220,10 +247,22 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
-          <Link href="/login" className="text-center text-sm text-sektor-muted">
-            Já tem conta?{" "}
-            <Text style={{ color: "#CC0000", fontWeight: "600" }}>Entrar</Text>
-          </Link>
+          <View style={{ alignItems: "center" }}>
+            <Text style={{ color: mutedColor, fontSize: 14 }}>
+              Já tem conta?{" "}
+              <Link href="/login">
+                <Text style={{ color: "#CC0000", fontWeight: "600" }}>Entrar</Text>
+              </Link>
+            </Text>
+          </View>
+
+          {/* Footer */}
+          <View style={{ alignItems: "center", marginTop: 40, paddingBottom: 8 }}>
+            <View style={{ width: 32, height: 1, backgroundColor: border, marginBottom: 16 }} />
+            <Text style={{ color: mutedColor, fontSize: 11 }}>
+              © {new Date().getFullYear()} Sektor · Todos os direitos reservados
+            </Text>
+          </View>
         </ScrollView>
       </Animated.View>
     </KeyboardAvoidingView>

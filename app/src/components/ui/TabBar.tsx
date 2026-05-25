@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { useColorScheme } from "nativewind";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useColorScheme, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TabConfig = {
@@ -18,8 +17,8 @@ const TABS: TabConfig[] = [
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme !== "light";
 
   return (
     <View
