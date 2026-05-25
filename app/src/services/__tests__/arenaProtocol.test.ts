@@ -113,6 +113,128 @@ describe("arenaProtocol.parseServerMessage", () => {
     });
   });
 
+  // ── Novos tipos de mensagem ──────────────────────────────────────────────
+
+  const validPlayerPosition = {
+    personId: "DFL-OBJ-000001",
+    teamId: "DFL-CLU-000001",
+    shirtNumber: 1,
+    x: 0.21,
+    y: -9.3,
+    speed: 0.18,
+    frameN: 10001,
+    timestamp: "2025-01-01T16:30:17.080Z",
+  };
+
+  const validPositionsFrame = {
+    frameN: 10001,
+    timestamp: "2025-01-01T16:30:17.080Z",
+    gameSection: "firstHalf",
+    players: [validPlayerPosition],
+    ball: { x: 0, y: 0, speed: 0 },
+  };
+
+  it("parses a PLAYER_POSITIONS payload", () => {
+    const result = parseServerMessage({
+      type: "PLAYER_POSITIONS",
+      frame: validPositionsFrame,
+    });
+    expect(result).toEqual({
+      type: "PLAYER_POSITIONS",
+      frame: validPositionsFrame,
+    });
+  });
+
+  it("returns null for PLAYER_POSITIONS with invalid frame", () => {
+    expect(
+      parseServerMessage({
+        type: "PLAYER_POSITIONS",
+        frame: { ...validPositionsFrame, gameSection: "halftime" },
+      }),
+    ).toBeNull();
+
+    expect(
+      parseServerMessage({
+        type: "PLAYER_POSITIONS",
+        frame: {
+          ...validPositionsFrame,
+          players: [{ ...validPlayerPosition, x: "not-a-number" }],
+        },
+      }),
+    ).toBeNull();
+  });
+
+  const validMatchEvent = {
+    eventId: "18902400000048",
+    matchId: "DFL-MAT-111111",
+    type: "goal",
+    minute: 2,
+    second: 40,
+    teamId: "DFL-CLU-000001",
+    playerId: "DFL-OBJ-000005",
+    playerName: "S. Fünf",
+    x: 6.11,
+    y: 51.65,
+    xG: 0.0308,
+    currentResult: "1:0",
+    gameSection: "firstHalf",
+    timestamp: "2025-01-01T16:32:57.129Z",
+  };
+
+  it("parses a MATCH_EVENT payload", () => {
+    const result = parseServerMessage({
+      type: "MATCH_EVENT",
+      event: validMatchEvent,
+    });
+    expect(result).toEqual({ type: "MATCH_EVENT", event: validMatchEvent });
+  });
+
+  it("returns null for MATCH_EVENT with unknown event type", () => {
+    expect(
+      parseServerMessage({
+        type: "MATCH_EVENT",
+        event: { ...validMatchEvent, type: "offside" },
+      }),
+    ).toBeNull();
+  });
+
+  const validTeamKpis = {
+    teamId: "DFL-CLU-000001",
+    possession: 60.5,
+    totalPasses: 300,
+    completedPasses: 250,
+    xG: 1.8,
+    shotsOnTarget: 4,
+    totalShots: 8,
+    fouls: 10,
+    yellowCards: 1,
+    redCards: 0,
+  };
+
+  it("parses a TEAM_KPIS payload", () => {
+    const guestKpis = { ...validTeamKpis, teamId: "DFL-CLU-000002", possession: 39.5 };
+    const result = parseServerMessage({
+      type: "TEAM_KPIS",
+      home: validTeamKpis,
+      guest: guestKpis,
+    });
+    expect(result).toEqual({
+      type: "TEAM_KPIS",
+      home: validTeamKpis,
+      guest: guestKpis,
+    });
+  });
+
+  it("returns null for TEAM_KPIS with missing fields", () => {
+    expect(
+      parseServerMessage({
+        type: "TEAM_KPIS",
+        home: { ...validTeamKpis, possession: "sixty" },
+        guest: validTeamKpis,
+      }),
+    ).toBeNull();
+  });
+
   it.each([
     null,
     undefined,

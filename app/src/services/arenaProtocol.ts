@@ -1,4 +1,13 @@
-import type { Match, Prediction, PressureBarState } from "../types";
+import type {
+  Match,
+  MatchEvent,
+  MatchEventType,
+  PlayerPosition,
+  PositionsFrame,
+  PressureBarState,
+  Prediction,
+  TeamKpis,
+} from "../types";
 
 export interface UserScore {
   userId: string;
@@ -17,9 +26,25 @@ export type ServerMessage =
   | { type: "PREDICTION"; prediction: Prediction }
   | { type: "PRESSURE_UPDATE"; pressureBar: PressureBarState }
   | { type: "PREDICTION_RESULT"; predictionId: string; correctOption: number }
-  | { type: "SCORE_UPDATE"; userId: string; score: number; correctCount: number; wrongCount: number }
+  | {
+      type: "SCORE_UPDATE";
+      userId: string;
+      score: number;
+      correctCount: number;
+      wrongCount: number;
+    }
   | { type: "ANSWER_ACCEPTED"; predictionId: string }
-  | { type: "ANSWER_REJECTED"; predictionId?: string; reason: AnswerRejectReason };
+  | {
+      type: "ANSWER_REJECTED";
+      predictionId?: string;
+      reason: AnswerRejectReason;
+    }
+  /** Snapshot de posições de todos os jogadores em campo (25 fps). */
+  | { type: "PLAYER_POSITIONS"; frame: PositionsFrame }
+  /** Evento de partida (gol, falta, cartão, etc.). */
+  | { type: "MATCH_EVENT"; event: MatchEvent }
+  /** KPIs agregados por time (posse, passes, xG, etc.). */
+  | { type: "TEAM_KPIS"; home: TeamKpis; guest: TeamKpis };
 
 export type ClientMessage = {
   type: "ANSWER";
@@ -38,6 +63,9 @@ const SERVER_MESSAGE_TYPES: ServerMessageType[] = [
   "SCORE_UPDATE",
   "ANSWER_ACCEPTED",
   "ANSWER_REJECTED",
+  "PLAYER_POSITIONS",
+  "MATCH_EVENT",
+  "TEAM_KPIS",
 ];
 
 const ANSWER_REJECT_REASONS: AnswerRejectReason[] = [
@@ -45,6 +73,24 @@ const ANSWER_REJECT_REASONS: AnswerRejectReason[] = [
   "DUPLICATE",
   "INVALID_OPTION",
 ];
+
+const MATCH_EVENT_TYPES: MatchEventType[] = [
+  "goal",
+  "shot",
+  "foul",
+  "yellowCard",
+  "redCard",
+  "corner",
+  "freeKick",
+  "throwIn",
+  "kickOff",
+  "substitution",
+  "other",
+];
+
+// ---------------------------------------------------------------------------
+// Type guards
+// ---------------------------------------------------------------------------
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -100,6 +146,80 @@ function isPrediction(value: unknown): value is Prediction {
   return true;
 }
 
+function isPlayerPosition(value: unknown): value is PlayerPosition {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.personId === "string" &&
+    typeof value.teamId === "string" &&
+    typeof value.x === "number" &&
+    typeof value.y === "number" &&
+    typeof value.speed === "number" &&
+    typeof value.frameN === "number" &&
+    typeof value.timestamp === "string"
+  );
+}
+
+function isPositionsFrame(value: unknown): value is PositionsFrame {
+  if (!isObject(value)) return false;
+  if (typeof value.frameN !== "number") return false;
+  if (typeof value.timestamp !== "string") return false;
+  if (
+    value.gameSection !== "firstHalf" &&
+    value.gameSection !== "secondHalf"
+  ) {
+    return false;
+  }
+  if (!Array.isArray(value.players)) return false;
+  if (!value.players.every(isPlayerPosition)) return false;
+  if (value.ball !== undefined) {
+    if (!isObject(value.ball)) return false;
+    if (
+      typeof value.ball.x !== "number" ||
+      typeof value.ball.y !== "number" ||
+      typeof value.ball.speed !== "number"
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isMatchEvent(value: unknown): value is MatchEvent {
+  if (!isObject(value)) return false;
+  if (typeof value.eventId !== "string") return false;
+  if (typeof value.matchId !== "string") return false;
+  if (
+    typeof value.type !== "string" ||
+    !MATCH_EVENT_TYPES.includes(value.type as MatchEventType)
+  ) {
+    return false;
+  }
+  if (typeof value.minute !== "number") return false;
+  if (typeof value.teamId !== "string") return false;
+  if (typeof value.timestamp !== "string") return false;
+  return true;
+}
+
+function isTeamKpis(value: unknown): value is TeamKpis {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.teamId === "string" &&
+    typeof value.possession === "number" &&
+    typeof value.totalPasses === "number" &&
+    typeof value.completedPasses === "number" &&
+    typeof value.xG === "number" &&
+    typeof value.shotsOnTarget === "number" &&
+    typeof value.totalShots === "number" &&
+    typeof value.fouls === "number" &&
+    typeof value.yellowCards === "number" &&
+    typeof value.redCards === "number"
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Parser principal
+// ---------------------------------------------------------------------------
+
 /**
  * Valida e estreita uma mensagem JSON arbitrária para o tipo `ServerMessage`.
  * Retorna `null` quando a mensagem não respeita o contrato.
@@ -118,12 +238,15 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         match: raw.match,
         pressureBar: raw.pressureBar,
       };
+
     case "PREDICTION":
       if (!isPrediction(raw.prediction)) return null;
       return { type: "PREDICTION", prediction: raw.prediction };
+
     case "PRESSURE_UPDATE":
       if (!isPressureBar(raw.pressureBar)) return null;
       return { type: "PRESSURE_UPDATE", pressureBar: raw.pressureBar };
+
     case "PREDICTION_RESULT":
       if (
         typeof raw.predictionId !== "string" ||
@@ -136,6 +259,7 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         predictionId: raw.predictionId,
         correctOption: raw.correctOption,
       };
+
     case "SCORE_UPDATE":
       if (
         typeof raw.userId !== "string" ||
@@ -152,9 +276,11 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         correctCount: raw.correctCount,
         wrongCount: raw.wrongCount,
       };
+
     case "ANSWER_ACCEPTED":
       if (typeof raw.predictionId !== "string") return null;
       return { type: "ANSWER_ACCEPTED", predictionId: raw.predictionId };
+
     case "ANSWER_REJECTED": {
       if (
         typeof raw.reason !== "string" ||
@@ -170,8 +296,28 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         reason: raw.reason as AnswerRejectReason,
       };
     }
+
+    case "PLAYER_POSITIONS":
+      if (!isPositionsFrame(raw.frame)) return null;
+      return { type: "PLAYER_POSITIONS", frame: raw.frame };
+
+    case "MATCH_EVENT":
+      if (!isMatchEvent(raw.event)) return null;
+      return { type: "MATCH_EVENT", event: raw.event as MatchEvent };
+
+    case "TEAM_KPIS":
+      if (!isTeamKpis(raw.home) || !isTeamKpis(raw.guest)) return null;
+      return {
+        type: "TEAM_KPIS",
+        home: raw.home,
+        guest: raw.guest,
+      };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Builders de mensagens do cliente
+// ---------------------------------------------------------------------------
 
 export function buildAnswerMessage(input: {
   predictionId: string;

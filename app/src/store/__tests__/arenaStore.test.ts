@@ -3,7 +3,7 @@ import {
   INITIAL_SCORE,
   useArenaStore,
 } from "../arenaStore";
-import type { Match, Prediction } from "../../types";
+import type { Match, MatchEvent, PositionsFrame, Prediction, TeamKpis } from "../../types";
 
 const matchFixture: Match = {
   id: "match-001",
@@ -109,5 +109,84 @@ describe("arenaStore", () => {
     expect(state.answeredPredictionIds).toEqual([]);
     expect(state.lastSendFailure).toBeNull();
     expect(state.myScore).toEqual(INITIAL_SCORE);
+    expect(state.positionsFrame).toBeNull();
+    expect(state.recentEvents).toEqual([]);
+    expect(state.homeKpis).toBeNull();
+    expect(state.guestKpis).toBeNull();
+  });
+
+  // ── Novos campos: tracking posicional ──────────────────────────────────
+
+  it("setPositionsFrame stores the latest frame", () => {
+    const frame: PositionsFrame = {
+      frameN: 10001,
+      timestamp: "2025-01-01T16:30:17.080Z",
+      gameSection: "firstHalf",
+      players: [
+        {
+          personId: "DFL-OBJ-000001",
+          teamId: "DFL-CLU-000001",
+          shirtNumber: 1,
+          x: 0.21,
+          y: -9.3,
+          speed: 0.18,
+          frameN: 10001,
+          timestamp: "2025-01-01T16:30:17.080Z",
+        },
+      ],
+      ball: { x: 0, y: 0, speed: 0 },
+    };
+    useArenaStore.getState().setPositionsFrame(frame);
+    expect(useArenaStore.getState().positionsFrame).toBe(frame);
+  });
+
+  it("addMatchEvent appends events and caps at MAX_EVENTS_HISTORY (20)", () => {
+    const store = useArenaStore.getState();
+    for (let i = 0; i < 25; i++) {
+      const event: MatchEvent = {
+        eventId: `ev-${i}`,
+        matchId: "match-001",
+        type: "foul",
+        minute: i,
+        teamId: "team-a",
+        timestamp: new Date().toISOString(),
+      };
+      store.addMatchEvent(event);
+    }
+    const { recentEvents } = useArenaStore.getState();
+    expect(recentEvents.length).toBe(20);
+    // Os 20 mais recentes devem ser os últimos 20 inseridos (ev-5 a ev-24)
+    expect(recentEvents[0].eventId).toBe("ev-5");
+    expect(recentEvents[19].eventId).toBe("ev-24");
+  });
+
+  it("setTeamKpis stores home and guest KPIs", () => {
+    const homeKpis: TeamKpis = {
+      teamId: "team-a",
+      possession: 60,
+      totalPasses: 300,
+      completedPasses: 250,
+      xG: 1.8,
+      shotsOnTarget: 4,
+      totalShots: 8,
+      fouls: 10,
+      yellowCards: 1,
+      redCards: 0,
+    };
+    const guestKpis: TeamKpis = {
+      teamId: "team-b",
+      possession: 40,
+      totalPasses: 200,
+      completedPasses: 160,
+      xG: 0.6,
+      shotsOnTarget: 2,
+      totalShots: 5,
+      fouls: 14,
+      yellowCards: 2,
+      redCards: 0,
+    };
+    useArenaStore.getState().setTeamKpis(homeKpis, guestKpis);
+    expect(useArenaStore.getState().homeKpis).toEqual(homeKpis);
+    expect(useArenaStore.getState().guestKpis).toEqual(guestKpis);
   });
 });
