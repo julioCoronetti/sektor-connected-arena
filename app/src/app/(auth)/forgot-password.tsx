@@ -58,9 +58,9 @@ export default function ForgotPasswordScreen() {
 
       <TextInput
         testID="forgot-email-input"
-        className="mb-1 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
+        className="mb-1 rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
         placeholder="E-mail"
-        placeholderTextColor="#6B6B80"
+        placeholderTextColor="#888888"
         value={email}
         onChangeText={handleEmailChange}
         onBlur={handleEmailBlur}
@@ -79,22 +79,26 @@ export default function ForgotPasswordScreen() {
       <TouchableOpacity
         testID="forgot-submit-button"
         accessibilityRole="button"
-        className={`items-center rounded-xl py-4 ${
-          canSubmit ? "bg-sektor-accent" : "bg-sektor-border"
-        }`}
+        style={{
+          backgroundColor: canSubmit ? "#CC0000" : "#2A2A2A",
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: "center",
+          marginBottom: 12,
+        }}
         onPress={handleSubmit}
         disabled={!canSubmit}
       >
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="font-bold text-white">Enviar código</Text>
+          <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Enviar código</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity
         accessibilityRole="button"
-        className="mt-4 items-center py-2"
+        className="items-center py-2"
         onPress={() => router.back()}
         disabled={isLoading}
       >

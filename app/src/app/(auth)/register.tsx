@@ -1,7 +1,11 @@
+import { Image } from "expo-image";
 import { Link } from "expo-router";
+import { useColorScheme } from "nativewind";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -9,6 +13,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AlertBanner } from "../../components/ui/AlertBanner";
 import { InlineError } from "../../components/ui/InlineError";
@@ -18,12 +23,14 @@ import { useAuthStore } from "../../store/authStore";
 import { isValidEmail } from "../../utils/validators/email";
 import { getPasswordStrength } from "../../utils/validators/password";
 
+const LOGO_DARK = require("../../../assets/images/logo-dark.png");
+const LOGO_LIGHT = require("../../../assets/images/logo-light.png");
+
 export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [emailError, setEmailError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +39,9 @@ export default function RegisterScreen() {
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -73,120 +83,149 @@ export default function RegisterScreen() {
   };
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      className="flex-1 bg-sektor-bg"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 32 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text className="mb-8 text-2xl font-bold text-sektor-text">
-          Criar conta no Sektor
-        </Text>
-
-        {/* Nome */}
-        <TextInput
-          testID="register-name-input"
-          className="mb-4 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
-          placeholder="Nome"
-          placeholderTextColor="#6B6B80"
-          value={name}
-          onChangeText={(v) => { setName(v); clearStoreError(); }}
-          autoCapitalize="words"
-          returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus()}
-          editable={!isLoading}
-        />
-
-        {/* E-mail */}
-        <TextInput
-          testID="register-email-input"
-          ref={emailRef}
-          className="mb-1 rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
-          placeholder="E-mail"
-          placeholderTextColor="#6B6B80"
-          value={email}
-          onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null); clearStoreError(); }}
-          onBlur={handleEmailBlur}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()}
-          editable={!isLoading}
-        />
-        <InlineError message={emailError} />
-
-        {/* Senha */}
-        <View className="relative mb-1">
-          <TextInput
-            testID="register-password-input"
-            ref={passwordRef}
-            className="rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
-            placeholder="Senha"
-            placeholderTextColor="#6B6B80"
-            value={password}
-            onChangeText={(v) => { setPassword(v); clearStoreError(); }}
-            secureTextEntry={!showPassword}
-            autoComplete="password-new"
-            returnKeyType="next"
-            onSubmitEditing={() => confirmRef.current?.focus()}
-            editable={!isLoading}
-          />
-          <ToggleSenha
-            isVisible={showPassword}
-            onToggle={() => setShowPassword((v) => !v)}
-          />
-        </View>
-        <PasswordStrengthIndicator password={password} />
-
-        {/* Confirmar senha */}
-        <View className="relative mb-1">
-          <TextInput
-            testID="register-confirm-password-input"
-            ref={confirmRef}
-            className="rounded-xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
-            placeholder="Confirmar senha"
-            placeholderTextColor="#6B6B80"
-            value={confirmPassword}
-            onChangeText={(v) => { setConfirmPassword(v); if (confirmError) setConfirmError(null); clearStoreError(); }}
-            onBlur={handleConfirmBlur}
-            secureTextEntry={!showConfirm}
-            autoComplete="password-new"
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-            editable={!isLoading}
-          />
-          <ToggleSenha
-            isVisible={showConfirm}
-            onToggle={() => setShowConfirm((v) => !v)}
-          />
-        </View>
-        <InlineError message={confirmError} />
-
-        <AlertBanner message={error} type="error" testID="register-error" />
-
-        <TouchableOpacity
-          testID="register-submit-button"
-          accessibilityRole="button"
-          className={`mt-2 items-center rounded-xl py-4 ${
-            canSubmit ? "bg-sektor-accent" : "bg-sektor-border"
-          }`}
-          onPress={handleSubmit}
-          disabled={!canSubmit}
+      <Animated.View entering={FadeIn.duration(300)} className="flex-1 bg-sektor-bg">
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 24,
+          }}
+          keyboardShouldPersistTaps="handled"
         >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="font-bold text-white">Criar conta</Text>
-          )}
-        </TouchableOpacity>
+          {/* Logo */}
+          <View style={{ alignItems: "center", marginBottom: 36 }}>
+            <Image
+              source={isDark ? LOGO_DARK : LOGO_LIGHT}
+              style={{ width: 140, height: 46 }}
+              contentFit="contain"
+              accessibilityLabel="Sektor logo"
+            />
+          </View>
 
-        <Link href="/login" className="mt-4 text-center text-sektor-muted">
-          Já tenho conta
-        </Link>
-      </ScrollView>
-    </Animated.View>
+          <Text className="mb-1 text-2xl font-bold text-sektor-text">
+            Criar conta
+          </Text>
+          <Text className="mb-8 text-sektor-muted">
+            Junte-se à arena
+          </Text>
+
+          {/* Nome */}
+          <TextInput
+            testID="register-name-input"
+            className="mb-4 rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
+            placeholder="Nome"
+            placeholderTextColor="#888888"
+            value={name}
+            onChangeText={(v) => { setName(v); clearStoreError(); }}
+            autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
+            editable={!isLoading}
+          />
+
+          {/* E-mail */}
+          <TextInput
+            testID="register-email-input"
+            ref={emailRef}
+            className="mb-1 rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 text-sektor-text"
+            placeholder="E-mail"
+            placeholderTextColor="#888888"
+            value={email}
+            onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null); clearStoreError(); }}
+            onBlur={handleEmailBlur}
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            editable={!isLoading}
+          />
+          <InlineError message={emailError} />
+
+          {/* Senha */}
+          <View className="relative mb-1">
+            <TextInput
+              testID="register-password-input"
+              ref={passwordRef}
+              className="rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
+              placeholder="Senha"
+              placeholderTextColor="#888888"
+              value={password}
+              onChangeText={(v) => { setPassword(v); clearStoreError(); }}
+              secureTextEntry={!showPassword}
+              autoComplete="password-new"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmRef.current?.focus()}
+              editable={!isLoading}
+            />
+            <ToggleSenha
+              isVisible={showPassword}
+              onToggle={() => setShowPassword((v) => !v)}
+            />
+          </View>
+          <PasswordStrengthIndicator password={password} />
+
+          {/* Confirmar senha */}
+          <View className="relative mb-1">
+            <TextInput
+              testID="register-confirm-password-input"
+              ref={confirmRef}
+              className="rounded-2xl border border-sektor-border bg-sektor-surface px-4 py-4 pr-14 text-sektor-text"
+              placeholder="Confirmar senha"
+              placeholderTextColor="#888888"
+              value={confirmPassword}
+              onChangeText={(v) => { setConfirmPassword(v); if (confirmError) setConfirmError(null); clearStoreError(); }}
+              onBlur={handleConfirmBlur}
+              secureTextEntry={!showConfirm}
+              autoComplete="password-new"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              editable={!isLoading}
+            />
+            <ToggleSenha
+              isVisible={showConfirm}
+              onToggle={() => setShowConfirm((v) => !v)}
+            />
+          </View>
+          <InlineError message={confirmError} />
+
+          <AlertBanner message={error} type="error" testID="register-error" />
+
+          <TouchableOpacity
+            testID="register-submit-button"
+            accessibilityRole="button"
+            style={{
+              backgroundColor: canSubmit ? "#CC0000" : "#2A2A2A",
+              borderRadius: 14,
+              paddingVertical: 14,
+              alignItems: "center",
+              marginTop: 8,
+              marginBottom: 12,
+            }}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>
+                Criar conta
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <Link href="/login" className="text-center text-sm text-sektor-muted">
+            Já tem conta?{" "}
+            <Text style={{ color: "#CC0000", fontWeight: "600" }}>Entrar</Text>
+          </Link>
+        </ScrollView>
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }

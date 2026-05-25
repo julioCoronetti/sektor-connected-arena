@@ -108,13 +108,17 @@ export default function ConfirmScreen() {
       <TouchableOpacity
         testID="confirm-submit"
         accessibilityRole="button"
-        className={`mb-3 items-center rounded-xl py-4 ${
-          code.length === 6 && !isLoading ? "bg-sektor-accent" : "bg-sektor-border"
-        }`}
+        style={{
+          backgroundColor: code.length === 6 && !isLoading ? "#CC0000" : "#2A2A2A",
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: "center",
+          marginBottom: 12,
+        }}
         onPress={handleConfirm}
         disabled={code.length < 6 || isLoading}
       >
-        <Text className="font-bold text-white">
+        <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>
           {isLoading ? "Confirmando..." : "Confirmar"}
         </Text>
       </TouchableOpacity>
@@ -122,9 +126,14 @@ export default function ConfirmScreen() {
       <TouchableOpacity
         testID="confirm-resend"
         accessibilityRole="button"
-        className={`items-center rounded-xl border border-sektor-border py-4 ${
-          resendDisabled ? "opacity-50" : "opacity-100"
-        }`}
+        style={{
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: "#2A2A2A",
+          paddingVertical: 14,
+          alignItems: "center",
+          opacity: resendDisabled ? 0.5 : 1,
+        }}
         onPress={handleResend}
         disabled={resendDisabled}
       >

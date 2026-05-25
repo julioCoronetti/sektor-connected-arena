@@ -86,22 +86,26 @@ export default function ResetPasswordScreen() {
       <TouchableOpacity
         testID="reset-submit-button"
         accessibilityRole="button"
-        className={`items-center rounded-xl py-4 ${
-          canSubmit ? "bg-sektor-accent" : "bg-sektor-border"
-        }`}
+        style={{
+          backgroundColor: canSubmit ? "#CC0000" : "#2A2A2A",
+          borderRadius: 14,
+          paddingVertical: 14,
+          alignItems: "center",
+          marginBottom: 12,
+        }}
         onPress={handleSubmit}
         disabled={!canSubmit}
       >
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="font-bold text-white">Redefinir senha</Text>
+          <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>Redefinir senha</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity
         accessibilityRole="button"
-        className="mt-4 items-center py-2"
+        className="items-center py-2"
         onPress={() => router.back()}
         disabled={isLoading}
       >

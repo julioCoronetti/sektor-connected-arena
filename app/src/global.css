@@ -4,10 +4,21 @@
 
 @layer base {
   :root {
-    /* Colors */
+    /* Dark mode (default) */
+    --sektor-bg: #0F0F0F;
+    --sektor-surface: #1A1A1A;
+    --sektor-border: #2A2A2A;
+    --sektor-text: #F5F5F5;
+    --sektor-muted: #888888;
+    --sektor-card: #1A1A1A;
+  }
 
-    /* Typography */
-
-    /* Spacing & Border Radius */
+  .light {
+    --sektor-bg: #F5F5F5;
+    --sektor-surface: #FFFFFF;
+    --sektor-border: #E0E0E0;
+    --sektor-text: #111111;
+    --sektor-muted: #666666;
+    --sektor-card: #FFFFFF;
   }
 }
