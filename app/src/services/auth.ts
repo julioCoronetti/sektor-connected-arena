@@ -1,8 +1,5 @@
-// Polyfill exigido pelo Amplify v6 em React Native (UUID, getRandomValues).
-import "react-native-get-random-values";
-// Registra storage e helpers de plataforma para o Amplify em RN.
-import "@aws-amplify/react-native";
-
+// Polyfills e registro do Amplify para RN são feitos em _layout.tsx (entry point).
+// Não duplicar aqui para evitar re-execução desnecessária no bundle.
 import { Amplify } from "aws-amplify";
 import {
   confirmResetPassword,
