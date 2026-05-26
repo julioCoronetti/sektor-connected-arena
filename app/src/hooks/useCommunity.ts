@@ -26,9 +26,7 @@ export function useCommunity(): UseCommunityResult {
 
   const loadPosts = useCallback(
     async (reset = false) => {
-      console.log("[community] loadPosts — teamId:", user?.teamId, "reset:", reset);
       if (!user?.teamId) {
-        console.log("[community] no teamId, skipping");
         setIsLoading(false);
         return;
       }
@@ -37,12 +35,10 @@ export function useCommunity(): UseCommunityResult {
       try {
         const cursor = reset ? undefined : lastKeyRef.current;
         const result = await api.getPosts(user.teamId, cursor);
-        console.log("[community] loadPosts result — posts:", result.posts.length, "lastKey:", result.lastKey);
         setPosts((prev) => (reset ? result.posts : [...prev, ...result.posts]));
         lastKeyRef.current = result.lastKey;
         setHasMore(!!result.lastKey);
       } catch (e) {
-        console.log("[community] loadPosts error:", e instanceof Error ? e.message : String(e));
         setError(e instanceof Error ? e.message : "Erro ao carregar posts");
       } finally {
         setIsLoading(false);

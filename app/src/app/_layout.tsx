@@ -8,10 +8,13 @@ import "../global.css";
 import { ThemeProvider } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
 
-// Suprime warning de prop deprecada originado por dependência de terceiros.
+// Suprime warnings de props deprecadas originados por dependências de terceiros.
 // Candidatos: react-native-reanimated ~4.1.1, @react-navigation/elements ^2.6.3,
-// expo-router ~6.0.23. Remover quando a dependência for atualizada.
-LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
+// expo-router ~6.0.23. Remover quando as dependências forem atualizadas.
+LogBox.ignoreLogs([
+  "props.pointerEvents is deprecated",
+  '"shadow*" style props are deprecated',
+]);
 
 export default function RootLayout() {
   const user = useAuthStore((s) => s.user);
@@ -24,12 +27,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    console.log("[layout] calling initialize (once)");
     initialize();
   }, [initialize]);
 
   useEffect(() => {
-    console.log("[layout] auth effect — isLoading:", isLoading, "user:", user?.email ?? null, "teamId:", user?.teamId ?? null, "segments:", segments);
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";

@@ -1,10 +1,52 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Switch, Text, TouchableOpacity, View } from "react-native";
+import { useRef, useEffect } from "react";
+import { ActivityIndicator, Animated, Text, TouchableOpacity, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
 import { AppHeader } from "../../components/ui/AppHeader";
 import { useBundesligaTeams } from "../../hooks/useBundesligaTeams";
 import { useAuthStore } from "../../store/authStore";
+
+function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {
+  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: value ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [value, anim]);
+
+  const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [2, 22] });
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onValueChange}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel="Alternar tema claro/escuro"
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: "#CC0000",
+        justifyContent: "center",
+      }}
+    >
+      <Animated.View
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: "#FFFFFF",
+          transform: [{ translateX }],
+        }}
+      />
+    </TouchableOpacity>
+  );
+}
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -136,13 +178,7 @@ export default function ProfileScreen() {
                 {isDark ? "Tema escuro" : "Tema claro"}
               </Text>
             </View>
-            <Switch
-              value={!isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: "#CC0000", true: "#CC0000" }}
-              thumbColor={isDark ? "#888888" : "#F5F5F5"}
-              accessibilityLabel="Alternar tema claro/escuro"
-            />
+            <CustomSwitch value={!isDark} onValueChange={toggleTheme} />
           </View>
         </View>
 

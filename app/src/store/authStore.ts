@@ -71,7 +71,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // causado por double-call em React StrictMode ou re-renders do _layout.tsx.
     if (get()._initialized) return;
     set({ _initialized: true });
-    console.log("[auth] initialize start");
     set({ isLoading: true, error: null });
     try {
       const user = await Promise.race([
@@ -80,13 +79,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           setTimeout(() => reject(new Error("initialize timeout")), 8000)
         ),
       ]);
-      console.log("[auth] initialize success:", user?.email, "teamId:", user?.teamId);
       set({ user });
     } catch (e) {
-      console.log("[auth] initialize error:", e instanceof Error ? e.message : String(e));
       set({ user: null });
     } finally {
-      console.log("[auth] initialize finally — isLoading=false");
       set({ isLoading: false });
     }
   },
@@ -108,7 +104,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await loadCurrentUser();
       set({ user });
     } catch (e) {
-      console.log("[auth] login error:", e instanceof Error ? `${e.name}: ${e.message}` : String(e));
       set({ error: mapCognitoError(e) });
     } finally {
       set({ isLoading: false });

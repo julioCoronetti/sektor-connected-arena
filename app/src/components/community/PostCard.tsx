@@ -42,7 +42,7 @@ export function PostCard({ post, onLike, onComment }: PostCardProps) {
       {post.imageUrl ? (
         <Image
           source={{ uri: post.imageUrl }}
-          className="mb-3 h-48 w-full rounded-xl"
+          style={{ width: "100%", height: 192, borderRadius: 12, marginBottom: 12 }}
           resizeMode="cover"
           accessibilityLabel="Imagem do post"
         />
