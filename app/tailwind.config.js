@@ -7,7 +7,6 @@ module.exports = {
     extend: {
       colors: {
         sektor: {
-          // Dark mode (default)
           bg: "var(--sektor-bg, #0F0F0F)",
           surface: "var(--sektor-surface, #1A1A1A)",
           border: "var(--sektor-border, #2A2A2A)",
@@ -18,7 +17,6 @@ module.exports = {
           muted: "var(--sektor-muted, #888888)",
           card: "var(--sektor-card, #1A1A1A)",
         },
-        // Aliases diretos para uso sem prefixo sektor-
         brand: {
           red: "#CC0000",
           "red-dark": "#990000",

@@ -248,8 +248,8 @@ export default function ArenaScreen() {
   // ── Render guards ────────────────────────────────────────────────────────
   if (!match) {
     return (
-      <View className="flex-1 items-center justify-center bg-sektor-bg">
-        <Text className="text-sektor-text">Carregando partida…</Text>
+      <View className="flex-1 items-center justify-center bg-sektor-bg dark:bg-sektor-dark-bg">
+        <Text className="text-sektor-text dark:text-sektor-dark-text">Carregando partida…</Text>
       </View>
     );
   }
@@ -267,7 +267,7 @@ export default function ArenaScreen() {
 
   // ── Render principal ─────────────────────────────────────────────────────
   return (
-    <View className="flex-1 bg-sektor-bg">
+    <View className="flex-1 bg-sektor-bg dark:bg-sektor-dark-bg">
       {/* Badge GPS */}
       {isInStadium ? (
         <View className="absolute right-4 top-16 z-10 flex-row items-center gap-1 rounded-full bg-green-500 px-3 py-1">
@@ -282,20 +282,20 @@ export default function ArenaScreen() {
       >
         {/* Cabeçalho da partida */}
         <View className="items-center pb-1 pt-12">
-          <Text className="text-xl font-bold text-sektor-text">
+          <Text className="text-xl font-bold text-sektor-text dark:text-sektor-dark-text">
             {match.teamA.name} vs {match.teamB.name}
           </Text>
 
           {/* Placar */}
           {match.score != null ? (
             <View className="mt-1 flex-row items-center gap-3">
-              <Text className="text-3xl font-bold text-sektor-text">
+              <Text className="text-3xl font-bold text-sektor-text dark:text-sektor-dark-text">
                 {match.score.home} – {match.score.guest}
               </Text>
             </View>
           ) : null}
 
-          <Text className="mt-1 text-sektor-muted">
+          <Text className="mt-1 text-sektor-muted dark:text-sektor-dark-muted">
             {match.minute}&apos;
             {match.gameSection === "secondHalf" ? " · 2º Tempo" : " · 1º Tempo"}
           </Text>
@@ -311,11 +311,11 @@ export default function ArenaScreen() {
         </View>
 
         {/* Score do usuário */}
-        <View className="mx-4 mb-3 mt-3 flex-row items-center justify-between rounded-xl bg-sektor-surface px-4 py-2">
-          <Text className="text-sektor-muted">Seus pontos</Text>
-          <Text className="text-base font-bold text-sektor-text">
+        <View className="mx-4 mb-3 mt-3 flex-row items-center justify-between rounded-xl bg-sektor-surface dark:bg-sektor-dark-surface px-4 py-2">
+          <Text className="text-sektor-muted dark:text-sektor-dark-muted">Seus pontos</Text>
+          <Text className="text-base font-bold text-sektor-text dark:text-sektor-dark-text">
             {myScore.score}{" "}
-            <Text className="text-xs text-sektor-muted">
+            <Text className="text-xs text-sektor-muted dark:text-sektor-dark-muted">
               ({myScore.correctCount}/
               {myScore.correctCount + myScore.wrongCount})
             </Text>
@@ -347,12 +347,12 @@ export default function ArenaScreen() {
 
         {/* Indicador de tracking ativo */}
         {positionsFrame != null ? (
-          <View className="mx-4 mb-3 flex-row items-center gap-2 rounded-xl bg-sektor-surface px-4 py-2">
+          <View className="mx-4 mb-3 flex-row items-center gap-2 rounded-xl bg-sektor-surface dark:bg-sektor-dark-surface px-4 py-2">
             <View className="h-2 w-2 rounded-full bg-green-400" />
-            <Text className="text-xs text-sektor-muted">
+            <Text className="text-xs text-sektor-muted dark:text-sektor-dark-muted">
               Tracking ao vivo · Frame {positionsFrame.frameN}
             </Text>
-            <Text className="ml-auto text-xs text-sektor-muted">
+            <Text className="ml-auto text-xs text-sektor-muted dark:text-sektor-dark-muted">
               {positionsFrame.players.length} jogadores
             </Text>
           </View>

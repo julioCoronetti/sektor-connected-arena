@@ -1,22 +1,40 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Switch, Text, TouchableOpacity, View } from "react-native";
 
+import { useTheme } from "../../context/ThemeContext";
 import { AppHeader } from "../../components/ui/AppHeader";
+import { useBundesligaTeams } from "../../hooks/useBundesligaTeams";
 import { useAuthStore } from "../../store/authStore";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const { isDark, toggleTheme } = useTheme();
+
+  // Busca os times para resolver o nome a partir do teamId numérico
+  const { teams } = useBundesligaTeams();
+  const teamName = user?.teamId
+    ? (teams.find((t) => String(t.teamId) === user.teamId)?.teamName ?? user.teamId)
+    : "—";
+
+  // Cores dinâmicas baseadas no tema
+  const colors = {
+    bg: isDark ? "#0F0F0F" : "#F5F5F5",
+    surface: isDark ? "#1A1A1A" : "#FFFFFF",
+    border: isDark ? "#2A2A2A" : "#E0E0E0",
+    text: isDark ? "#F5F5F5" : "#111111",
+    muted: isDark ? "#888888" : "#666666",
+  };
 
   return (
-    <View className="flex-1 bg-sektor-bg">
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <AppHeader paddingBottom={4} />
-      <View className="h-px bg-sektor-border" />
+      <View style={{ height: 1, backgroundColor: colors.border }} />
 
-      <View className="flex-1 px-5 pt-6">
+      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Avatar */}
-        <View className="mb-6 items-center">
+        <View style={{ marginBottom: 24, alignItems: "center" }}>
           <View
             style={{
               width: 72,
@@ -31,26 +49,102 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={36} color="#CC0000" />
           </View>
           {user?.name ? (
-            <Text className="text-lg font-bold text-sektor-text">{user.name}</Text>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
+              {user.name}
+            </Text>
           ) : null}
           {user?.email ? (
-            <Text className="text-sm text-sektor-muted">{user.email}</Text>
+            <Text style={{ fontSize: 14, color: colors.muted, marginTop: 2 }}>
+              {user.email}
+            </Text>
           ) : null}
         </View>
 
         {/* Info card */}
         {user ? (
           <View
-            className="mb-6 rounded-2xl bg-sektor-surface p-4"
-            style={{ borderWidth: 1, borderColor: "#2A2A2A" }}
+            style={{
+              marginBottom: 16,
+              borderRadius: 16,
+              backgroundColor: colors.surface,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
           >
-            <InfoRow icon="person-outline" label="Nome" value={user.name || "—"} />
-            <View className="my-3 h-px bg-sektor-border" />
-            <InfoRow icon="mail-outline" label="E-mail" value={user.email} />
-            <View className="my-3 h-px bg-sektor-border" />
-            <InfoRow icon="shield-half-outline" label="Time" value={user.teamId || "—"} />
+            <InfoRow
+              icon="person-outline"
+              label="Nome"
+              value={user.name || "—"}
+              colors={colors}
+            />
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />
+            <InfoRow
+              icon="mail-outline"
+              label="E-mail"
+              value={user.email}
+              colors={colors}
+            />
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12 }} />
+            <InfoRow
+              icon="shield-half-outline"
+              label="Time"
+              value={teamName}
+              colors={colors}
+            />
           </View>
         ) : null}
+
+        {/* Card de preferências */}
+        <View
+          style={{
+            marginBottom: 24,
+            borderRadius: 16,
+            backgroundColor: colors.surface,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: colors.muted,
+              textTransform: "uppercase",
+              letterSpacing: 0.8,
+              marginBottom: 12,
+            }}
+          >
+            Preferências
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons
+                name={isDark ? "moon" : "sunny"}
+                size={18}
+                color={colors.muted}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ fontSize: 14, color: colors.text }}>
+                {isDark ? "Tema escuro" : "Tema claro"}
+              </Text>
+            </View>
+            <Switch
+              value={!isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: "#CC0000", true: "#CC0000" }}
+              thumbColor={isDark ? "#888888" : "#F5F5F5"}
+              accessibilityLabel="Alternar tema claro/escuro"
+            />
+          </View>
+        </View>
 
         {/* Logout */}
         <TouchableOpacity
@@ -81,18 +175,21 @@ function InfoRow({
   icon,
   label,
   value,
+  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  colors: { muted: string; text: string };
 }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Ionicons name={icon} size={18} color="#888888" style={{ marginRight: 10 }} />
-      <Text className="text-sektor-muted text-sm" style={{ width: 52 }}>
-        {label}
-      </Text>
-      <Text className="text-sektor-text text-sm font-semibold flex-1" numberOfLines={1}>
+      <Ionicons name={icon} size={18} color={colors.muted} style={{ marginRight: 10 }} />
+      <Text style={{ fontSize: 14, color: colors.muted, width: 52 }}>{label}</Text>
+      <Text
+        style={{ fontSize: 14, fontWeight: "600", color: colors.text, flex: 1 }}
+        numberOfLines={1}
+      >
         {value}
       </Text>
     </View>

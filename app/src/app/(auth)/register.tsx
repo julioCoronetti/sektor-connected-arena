@@ -9,7 +9,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -19,6 +18,7 @@ import { AlertBanner } from "../../components/ui/AlertBanner";
 import { InlineError } from "../../components/ui/InlineError";
 import { PasswordStrengthIndicator } from "../../components/ui/PasswordStrengthIndicator";
 import { ToggleSenha } from "../../components/ui/ToggleSenha";
+import { useTheme } from "../../context/ThemeContext";
 import { useAuthStore } from "../../store/authStore";
 import { isValidEmail } from "../../utils/validators/email";
 import { getPasswordStrength } from "../../utils/validators/password";
@@ -41,8 +41,7 @@ export default function RegisterScreen() {
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme !== "light";
+  const { isDark } = useTheme();
 
   // Cores adaptadas ao tema
   const bg = isDark ? "#0F0F0F" : "#F5F5F5";

@@ -1,6 +1,8 @@
 import { Image } from "expo-image";
-import { useColorScheme, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useTheme } from "../../context/ThemeContext";
 
 const LOGO_DARK = require("../../../assets/images/logo-dark.png");
 const LOGO_LIGHT = require("../../../assets/images/logo-light.png");
@@ -12,10 +14,9 @@ interface AppHeaderProps {
 
 export function AppHeader({ paddingBottom = 0 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
+  const { isDark } = useTheme();
   // logo-dark = texto branco → usar em fundo escuro
   // logo-light = texto preto → usar em fundo claro
-  const isDark = colorScheme !== "light";
 
   return (
     <View

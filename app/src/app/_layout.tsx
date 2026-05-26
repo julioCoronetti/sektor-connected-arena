@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { LogBox } from "react-native";
 
 import "../global.css";
+import { ThemeProvider } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
 
 // Suprime warning de prop deprecada originado por dependência de terceiros.
@@ -50,11 +51,13 @@ export default function RootLayout() {
   }, [user, isLoading, segments, router]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="arena/[matchId]" />
-    </Stack>
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="arena/[matchId]" />
+      </Stack>
+    </ThemeProvider>
   );
 }

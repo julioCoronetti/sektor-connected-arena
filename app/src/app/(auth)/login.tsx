@@ -9,7 +9,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -18,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertBanner } from "../../components/ui/AlertBanner";
 import { InlineError } from "../../components/ui/InlineError";
 import { ToggleSenha } from "../../components/ui/ToggleSenha";
+import { useTheme } from "../../context/ThemeContext";
 import { useAuthStore } from "../../store/authStore";
 import { isValidEmail } from "../../utils/validators/email";
 
@@ -33,8 +33,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme !== "light";
+  const { isDark } = useTheme();
 
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
