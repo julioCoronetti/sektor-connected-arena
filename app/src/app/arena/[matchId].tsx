@@ -57,7 +57,7 @@ export default function ArenaScreen() {
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const userTeamId = useAuthStore((s) => s.user?.teamId ?? null);
 
-  const { isInStadium, multiplier } = useLocation();
+  const { isInStadium, permissionDenied, multiplier } = useLocation();
 
   // ── Inicialização da partida ─────────────────────────────────────────────
   useEffect(() => {
@@ -275,6 +275,10 @@ export default function ArenaScreen() {
         <View className="absolute right-4 top-16 z-10 flex-row items-center gap-1 rounded-full bg-green-500 px-3 py-1">
           <Text className="text-xs font-bold text-white">📍 Na Arena 2x</Text>
         </View>
+      ) : permissionDenied ? (
+        <View className="absolute right-4 top-16 z-10 flex-row items-center gap-1 rounded-full bg-gray-600 px-3 py-1">
+          <Text className="text-xs font-bold text-white">📍 1x (sem GPS)</Text>
+        </View>
       ) : null}
 
       <ScrollView
@@ -399,7 +403,8 @@ export default function ArenaScreen() {
       {/* Botão AR — fixo sobre o scroll */}
       <TouchableOpacity
         accessibilityRole="button"
-        className="absolute bottom-8 right-6 flex-row items-center gap-2 rounded-full bg-white/20 px-4 py-3"
+        className="absolute bottom-8 right-6 flex-row items-center gap-2 rounded-full px-4 py-3"
+        style={{ backgroundColor: "#1a1a2e", shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }}
         onPress={() => setArMode(true)}
       >
         <Ionicons name="camera" size={18} color="white" />
