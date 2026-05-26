@@ -126,6 +126,29 @@ exports.handler = async (event) => {
     await sendScoreUpdates(api, connections, scoreUpdates);
   }
 
+  // Calcula e emite PRESSURE_UPDATE baseado em pontos acumulados por time.
+  if (answersReadOk && answers.length > 0) {
+    try {
+      const pressureBar = await computePressureBar(matchId, answers, correctOption);
+      if (pressureBar) {
+        await broadcast(api, connections, {
+          type: "PRESSURE_UPDATE",
+          pressureBar,
+        });
+      }
+    } catch (e) {
+      // Falha não-crítica: log e segue.
+      console.error(
+        JSON.stringify({
+          level: "ERROR",
+          message: "pressure update failed",
+          matchId,
+          cause: e.message,
+        }),
+      );
+    }
+  }
+
   console.log(
     JSON.stringify({
       level: "INFO",
@@ -166,6 +189,7 @@ async function getAnswers(predictionId) {
     userId: item.userId.S,
     selectedOption: Number(item.selectedOption.N),
     gpsMultiplier: Number(item.gpsMultiplier.N),
+    teamId: item.teamId?.S ?? null,
   }));
 }
 
@@ -283,4 +307,57 @@ async function sendOne(api, connectionId, data) {
       }),
     );
   }
+}
+
+/**
+ * Calcula a barra de pressão baseada nos scores acumulados por time.
+ *
+ * Lê todos os scores da partida, agrupa por teamId, soma os pontos.
+ * Retorna { teamA: %, teamB: % } onde teamA = "team-a" e teamB = "team-b".
+ * Se nenhum time tiver pontos, retorna null (sem update).
+ */
+async function computePressureBar(matchId, answers, correctOption) {
+  // Pontos desta rodada por time (acertos apenas).
+  const roundPointsByTeam = {};
+  for (const answer of answers) {
+    if (!answer.teamId) continue;
+    const correct = answer.selectedOption === correctOption;
+    if (!correct) continue;
+    const pts = 10 * (answer.gpsMultiplier === 2 ? 2 : 1);
+    roundPointsByTeam[answer.teamId] = (roundPointsByTeam[answer.teamId] ?? 0) + pts;
+  }
+
+  // Busca scores acumulados de todos os usuários desta partida.
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: process.env.SCORES_TABLE,
+      KeyConditionExpression: "matchId = :m",
+      ExpressionAttributeValues: { ":m": { S: matchId } },
+    }),
+  );
+
+  const totalByTeam = {};
+  for (const item of result.Items ?? []) {
+    const userId = item.userId?.S;
+    const score = Number(item.score?.N ?? 0);
+    if (!userId || score === 0) continue;
+
+    // Busca teamId da conexão ativa para este userId.
+    // Usa os dados já disponíveis nas respostas desta rodada como cache.
+    const answerForUser = answers.find((a) => a.userId === userId);
+    const tid = answerForUser?.teamId ?? null;
+    if (!tid) continue;
+    totalByTeam[tid] = (totalByTeam[tid] ?? 0) + score;
+  }
+
+  const scoreA = totalByTeam["team-a"] ?? 0;
+  const scoreB = totalByTeam["team-b"] ?? 0;
+  const total = scoreA + scoreB;
+
+  if (total === 0) return null;
+
+  return {
+    teamA: Math.round((scoreA / total) * 100),
+    teamB: Math.round((scoreB / total) * 100),
+  };
 }

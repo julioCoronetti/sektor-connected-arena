@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 
 import type { Match, PressureBarState, TeamKpis } from "../../types";
@@ -7,18 +8,21 @@ interface PressureBarProps {
   match: Match;
   homeKpis?: TeamKpis | null;
   guestKpis?: TeamKpis | null;
+  /** ID do time do usuário logado (ex: "team-a" ou "team-b"). */
+  userTeamId?: string | null;
 }
 
 /**
- * Barra de posse de bola entre os dois times.
+ * Barra de pressão/posse entre os dois times.
+ * Destaca o lado do time do usuário com badge "Sua Torcida".
  * Quando KPIs reais estão disponíveis, exibe métricas adicionais (xG, passes, chutes).
- * A largura de cada lado é proporcional à posse de bola recebida via WebSocket.
  */
 export function PressureBar({
   pressureBar,
   match,
   homeKpis,
   guestKpis,
+  userTeamId,
 }: PressureBarProps) {
   const safeA = Math.max(0, pressureBar.teamA);
   const safeB = Math.max(0, pressureBar.teamB);
@@ -28,27 +32,55 @@ export function PressureBar({
 
   const hasKpis = homeKpis != null && guestKpis != null;
 
+  const isUserTeamA = userTeamId === match.teamA.id;
+  const isUserTeamB = userTeamId === match.teamB.id;
+
   return (
     <View className="px-4 py-3" testID="pressure-bar">
-      {/* Nomes dos times */}
-      <View className="mb-1 flex-row justify-between">
-        <Text
-          className="text-sm font-bold"
-          style={{ color: match.teamA.color }}
-        >
-          {match.teamA.name}
-        </Text>
-        <Text className="text-xs text-gray-400">Posse</Text>
-        <Text
-          className="text-sm font-bold"
-          style={{ color: match.teamB.color }}
-        >
-          {match.teamB.name}
-        </Text>
+      {/* Nomes dos times + badge "Sua Torcida" */}
+      <View className="mb-1 flex-row justify-between items-end">
+        <View className="items-start gap-0.5">
+          <Text
+            className="text-sm font-bold"
+            style={{ color: match.teamA.color }}
+          >
+            {match.teamA.name}
+          </Text>
+          {isUserTeamA ? (
+            <Text className="text-xs font-semibold" style={{ color: match.teamA.color }}>
+              ⚡ Sua Torcida
+            </Text>
+          ) : null}
+        </View>
+
+        <Text className="text-xs text-gray-400">Pressão</Text>
+
+        <View className="items-end gap-0.5">
+          <Text
+            className="text-sm font-bold"
+            style={{ color: match.teamB.color }}
+          >
+            {match.teamB.name}
+          </Text>
+          {isUserTeamB ? (
+            <Text className="text-xs font-semibold" style={{ color: match.teamB.color }}>
+              Sua Torcida ⚡
+            </Text>
+          ) : null}
+        </View>
       </View>
 
-      {/* Barra principal de posse */}
-      <View className="h-6 flex-row overflow-hidden rounded-full bg-gray-800">
+      {/* Barra principal de pressão */}
+      <View
+        className="h-6 flex-row overflow-hidden rounded-full bg-gray-800"
+        style={
+          isUserTeamA
+            ? { borderWidth: 2, borderColor: match.teamA.color }
+            : isUserTeamB
+              ? { borderWidth: 2, borderColor: match.teamB.color }
+              : undefined
+        }
+      >
         <View
           testID="pressure-bar-team-a"
           style={{ flex: widthA, backgroundColor: match.teamA.color }}
@@ -59,13 +91,17 @@ export function PressureBar({
         />
       </View>
 
-      {/* Percentuais de posse */}
+      {/* Percentuais */}
       <View className="mt-1 flex-row justify-between">
         <Text className="text-xs font-semibold" style={{ color: match.teamA.color }}>
-          {Math.round(widthA)}%
+          {Math.round(widthA)}%{isUserTeamA ? (
+            <> <MaterialCommunityIcons name="fire" size={12} color={match.teamA.color} /></>
+          ) : ""}
         </Text>
         <Text className="text-xs font-semibold" style={{ color: match.teamB.color }}>
-          {Math.round(widthB)}%
+          {isUserTeamB ? (
+            <><MaterialCommunityIcons name="fire" size={12} color={match.teamB.color} /> </>
+          ) : ""}{Math.round(widthB)}%
         </Text>
       </View>
 

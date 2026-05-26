@@ -56,6 +56,9 @@ exports.handler = async (event) => {
     return { statusCode: 200 };
   }
 
+  // teamId pode ser null para usuários sem time definido — aceita mesmo assim.
+  const teamId = conn.teamId ?? null;
+
   // Validações de payload.
   const predictionId = body?.predictionId;
   const selectedOption = body?.selectedOption;
@@ -92,6 +95,7 @@ exports.handler = async (event) => {
           gpsMultiplier: { N: String(gpsMultiplier) },
           submittedAt: { S: submittedAt },
           ttl: { N: String(ttl) },
+          ...(teamId ? { teamId: { S: teamId } } : {}),
         },
         ConditionExpression:
           "attribute_not_exists(predictionId) AND attribute_not_exists(userId)",
@@ -142,6 +146,7 @@ async function getConnection(connectionId) {
     matchId: item.matchId.S,
     connectionId: item.connectionId.S,
     userId: item.userId?.S,
+    teamId: item.teamId?.S ?? null,
   };
 }
 

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 import type { Post } from "../../types";
@@ -55,7 +56,8 @@ export function PostCard({ post, onLike, onComment }: PostCardProps) {
           onPress={onLike}
           className="flex-row items-center gap-1"
         >
-          <Text className="text-sektor-muted">❤️ {post.likes}</Text>
+          <Ionicons name="heart" size={16} color="#9CA3AF" />
+          <Text className="text-sektor-muted">{post.likes}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -63,7 +65,8 @@ export function PostCard({ post, onLike, onComment }: PostCardProps) {
           onPress={onComment}
           className="flex-row items-center gap-1"
         >
-          <Text className="text-sektor-muted">💬 {post.commentCount}</Text>
+          <Ionicons name="chatbubble" size={16} color="#9CA3AF" />
+          <Text className="text-sektor-muted">{post.commentCount}</Text>
         </TouchableOpacity>
       </View>
     </View>

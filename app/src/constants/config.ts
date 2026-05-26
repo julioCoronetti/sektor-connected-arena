@@ -17,15 +17,19 @@ export const STADIUM_COORDS = {
 export const TEAMS = [
   {
     id: "team-a",
-    name: "Time A",
+    dflId: "DFL-CLU-000001",
+    name: "FC Team",
+    shortName: "FCT",
     color: "#E63946",
-    description: "Os guerreiros do setor vermelho. Paixão e garra em cada partida.",
+    description: "Time da casa. Paixão e garra em cada partida.",
   },
   {
     id: "team-b",
-    name: "Time B",
+    dflId: "DFL-CLU-000002",
+    name: "Club",
+    shortName: "CLU",
     color: "#1D3557",
-    description: "A força do setor azul. Tradição e estratégia no DNA do clube.",
+    description: "Time visitante. Tradição e estratégia no DNA do clube.",
   },
 ] as const;
 

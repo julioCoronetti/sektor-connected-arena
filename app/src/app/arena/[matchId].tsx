@@ -1,3 +1,4 @@
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -54,6 +55,7 @@ export default function ArenaScreen() {
   const reset = useArenaStore((s) => s.reset);
 
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const userTeamId = useAuthStore((s) => s.user?.teamId ?? null);
 
   const { isInStadium, multiplier } = useLocation();
 
@@ -282,9 +284,43 @@ export default function ArenaScreen() {
       >
         {/* Cabeçalho da partida */}
         <View className="items-center pb-1 pt-12">
-          <Text className="text-xl font-bold text-sektor-text dark:text-sektor-dark-text">
-            {match.teamA.name} vs {match.teamB.name}
-          </Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-xl font-bold text-sektor-text dark:text-sektor-dark-text">
+              {match.teamA.name} vs {match.teamB.name}
+            </Text>
+          </View>
+
+          {/* Badge do time do usuário */}
+          {userTeamId ? (
+            <View className="mt-1 flex-row items-center gap-1 rounded-full px-3 py-0.5"
+              style={{
+                backgroundColor:
+                  userTeamId === match.teamA.id
+                    ? match.teamA.color + "33"
+                    : match.teamB.color + "33",
+              }}
+            >
+              <MaterialCommunityIcons
+                name="stadium"
+                size={12}
+                color={userTeamId === match.teamA.id ? match.teamA.color : match.teamB.color}
+              />
+              <Text
+                className="text-xs font-bold"
+                style={{
+                  color:
+                    userTeamId === match.teamA.id
+                      ? match.teamA.color
+                      : match.teamB.color,
+                }}
+              >
+                {" "}Sua Torcida:{" "}
+                {userTeamId === match.teamA.id
+                  ? match.teamA.name
+                  : match.teamB.name}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Placar */}
           {match.score != null ? (
@@ -340,6 +376,7 @@ export default function ArenaScreen() {
           match={match}
           homeKpis={homeKpis}
           guestKpis={guestKpis}
+          userTeamId={userTeamId}
         />
 
         {/* Feed de eventos recentes */}
@@ -365,8 +402,9 @@ export default function ArenaScreen() {
         className="absolute bottom-8 right-6 flex-row items-center gap-2 rounded-full bg-white/20 px-4 py-3"
         onPress={() => setArMode(true)}
       >
+        <Ionicons name="camera" size={18} color="white" />
         <Text className="font-bold text-white">
-          📷 {positionsFrame != null ? "AR + Tracking" : "Modo AR"}
+          {positionsFrame != null ? "AR + Tracking" : "Modo AR"}
         </Text>
       </TouchableOpacity>
 

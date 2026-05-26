@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
@@ -125,7 +126,7 @@ export function CreatePostModal({
             disabled={isSubmitting}
             className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-sektor-card"
           >
-            <Text className="text-xl">📷</Text>
+            <Ionicons name="camera" size={22} color="#9CA3AF" />
           </TouchableOpacity>
           {imageUri ? (
             <View className="relative">

@@ -43,10 +43,16 @@ exports.handler = async (event) => {
   const token = event.queryStringParameters?.token;
 
   let userId = null;
+  let teamId = null;
+
   if (typeof token === "string" && token.length > 0) {
     const claims = decodeJwtPayload(token);
     if (claims && typeof claims.sub === "string") {
       userId = claims.sub;
+    }
+    // Cognito custom attribute: custom:teamId
+    if (claims && typeof claims["custom:teamId"] === "string") {
+      teamId = claims["custom:teamId"];
     }
   }
 
@@ -60,6 +66,9 @@ exports.handler = async (event) => {
     if (authClaims && typeof authClaims.sub === "string") {
       userId = authClaims.sub;
     }
+    if (authClaims && typeof authClaims["custom:teamId"] === "string") {
+      teamId = authClaims["custom:teamId"];
+    }
   }
 
   const item = {
@@ -69,6 +78,9 @@ exports.handler = async (event) => {
   };
   if (userId) {
     item.userId = { S: userId };
+  }
+  if (teamId) {
+    item.teamId = { S: teamId };
   }
 
   await dynamo.send(
