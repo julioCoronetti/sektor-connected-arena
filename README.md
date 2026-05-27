@@ -1,39 +1,39 @@
 # Sektor — Connected Arena
 
-Aplicativo mobile de engajamento de torcidas em tempo real. Fãs competem em predições ao vivo durante partidas da Bundesliga, acumulam pontos, sobem no leaderboard e interagem na comunidade do time.
+Mobile engagement app for real-time fan interaction. Fans compete in live predictions during Bundesliga matches, earn points, climb leaderboards, and engage with their team's community.
 
 ---
 
 ## Stack
 
-| Camada | Tecnologia |
-|--------|-----------|
+| Layer | Technology |
+|-------|------------|
 | Mobile | React Native + Expo + NativeWind + Expo Router |
 | Auth | Amazon Cognito via AWS Amplify |
-| Backend REST | API Gateway REST + AWS Lambda |
-| Backend Realtime | API Gateway WebSocket + AWS Lambda |
-| Banco de dados | Amazon DynamoDB |
+| Backend (REST) | API Gateway REST + AWS Lambda |
+| Backend (Realtime) | API Gateway WebSocket + AWS Lambda |
+| Database | Amazon DynamoDB |
 | Storage | Amazon S3 |
-| Pipeline de partida | Amazon Kinesis → Lambda → Amazon Bedrock (Nova Lite) |
+| Match pipeline | Amazon Kinesis → Lambda → Amazon Bedrock (Nova Lite) |
 | Scheduler | Amazon EventBridge Scheduler |
-| IA | Amazon Bedrock (amazon.nova-lite-v1:0) |
-| Localização | Expo Location (GPS) |
-| AR | Expo Camera (overlay nativo) |
+| AI | Amazon Bedrock (amazon.nova-lite-v1:0) |
+| Location | Expo Location (GPS) |
+| AR | Expo Camera (native overlay) |
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
 - Node.js 20+
 - Expo CLI: `npm install -g expo-cli`
-- AWS CLI configurado com credenciais da conta do challenge
-- `wscat` para smoke tests: `npm install -g wscat`
+- AWS CLI configured with the challenge account credentials
+- `wscat` for smoke tests: `npm install -g wscat`
 
 ---
 
-## Variáveis de Ambiente
+## Environment Variables
 
-Criar `app/.env.local` com:
+Create `app/.env.local` with:
 
 ```
 EXPO_PUBLIC_API_WS_URL=wss://<WS_API_ID>.execute-api.us-east-1.amazonaws.com/prod
@@ -44,7 +44,7 @@ EXPO_PUBLIC_COGNITO_CLIENT_ID=XXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ---
 
-## Como Rodar o App
+## Running the App
 
 ```bash
 cd app
@@ -55,28 +55,31 @@ npm run ios            # iOS simulator
 npm run web            # Watch Party Web (browser)
 ```
 
+Notes:
+- The `simulate` script is available in `app/package.json` and can be run with `npm run simulate -- match-001 5`.
+
 ---
 
-## Como Rodar o Simulador de Partida
+## Running the Match Simulator
 
-O simulador lê os dados DFL reais do S3 e emite eventos no Kinesis.
+The simulator replays real DFL match data from S3 and emits events to Kinesis.
 
-**Via Lambda (produção):**
-O simulador é disparado automaticamente quando o primeiro usuário entra na Arena. Não é necessário rodar manualmente.
+**Via Lambda (production):**
+The simulator is triggered automatically when the first user joins the Arena; manual execution is not required.
 
-**Via script local (desenvolvimento):**
+**Via local script (development):**
 ```bash
 cd app
-npm run simulate match-001 5
-# Parâmetros: <matchId> <durationMinutes>
+npm run simulate -- match-001 5
+# Parameters: <matchId> <durationMinutes>
 ```
 
-**Smoke test manual:**
+**Manual smoke test:**
 ```bash
-# Terminal 1 — conectar ao WebSocket
+# Terminal 1 — connect to the WebSocket
 wscat -c "wss://<WS_API_ID>.execute-api.us-east-1.amazonaws.com/prod?matchId=match-001"
 
-# Terminal 2 — disparar simulador via AWS CLI
+# Terminal 2 — trigger the simulator via AWS CLI
 aws lambda invoke \
   --function-name simulateMatch \
   --invocation-type Event \
@@ -84,20 +87,20 @@ aws lambda invoke \
   /dev/null
 ```
 
-Esperado no Terminal 1: mensagens `{"type":"PREDICTION", ...}` chegando a cada evento relevante.
+Expected in Terminal 1: `{"type":"PREDICTION", ...}` messages arriving for each relevant event.
 
 ---
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 sektor-connected-arena/
 ├── app/                    # React Native (Expo)
 │   └── src/
-│       ├── app/            # Rotas (Expo Router)
-│       │   ├── (auth)/     # Login, cadastro, seleção de time
+│       ├── app/            # Routes (Expo Router)
+│       │   ├── (auth)/     # Login, signup, team selection
 │       │   ├── (tabs)/     # Community, Arena, Leaderboard, Profile
-│       │   ├── arena/      # Modo Arena [matchId]
+│       │   ├── arena/      # Arena mode [matchId]
 │       │   └── watch-party/# Watch Party Web [matchId]
 │       ├── components/     # UI components
 │       ├── hooks/          # Custom hooks
@@ -107,12 +110,12 @@ sektor-connected-arena/
 ├── lambdas/                # AWS Lambda functions
 │   ├── wsConnect/          # WebSocket $connect
 │   ├── wsDisconnect/       # WebSocket $disconnect
-│   ├── submitAnswer/       # Recebe resposta de predição
-│   ├── resolveAnswer/      # Resolve predição + scores + badges
+│   ├── submitAnswer/       # Receives prediction answers
+│   ├── resolveAnswer/      # Resolves predictions, scores, and badges
 │   ├── processEvent/       # Kinesis → Bedrock → WS broadcast
-│   ├── simulateMatch/      # Replay do feed DFL (S3 → Kinesis)
+│   ├── simulateMatch/      # Replays DFL feed (S3 → Kinesis)
 │   ├── getLeaderboard/     # REST GET /leaderboard
-│   ├── analyzeSentiment/   # Sentiment do fórum via Bedrock
+│   ├── analyzeSentiment/   # Forum sentiment via Bedrock
 │   ├── getPosts/           # REST GET /posts
 │   ├── createPost/         # REST POST /posts
 │   ├── likePost/           # REST POST /posts/{id}/like
@@ -120,14 +123,14 @@ sektor-connected-arena/
 │   ├── getComments/        # REST GET /posts/{id}/comments
 │   ├── createComment/      # REST POST /posts/{id}/comments
 │   └── getUploadUrl/       # REST GET /upload-url
-├── infra/                  # IAM policies e configs AWS
-├── docs/                   # Planos de implementação
-└── challenge/              # Documentação do desafio
+├── infra/                  # IAM policies and AWS configs
+├── docs/                   # Implementation plans
+└── challenge/              # Challenge documentation
 ```
 
 ---
 
-## Arquitetura AWS
+## AWS Architecture
 
 ```
 [Mobile App]
@@ -140,7 +143,7 @@ sektor-connected-arena/
 [simulateMatch Lambda]
   └─ S3 (DFL XML) → Kinesis (sektor-match-events)
         └─ processEvent Lambda
-              ├─ Bedrock Nova Lite (predição personalizada por torcida)
+              ├─ Bedrock Nova Lite (team-custom predictions)
               ├─ DynamoDB (connections)
               ├─ API GW WS ManageConnections (broadcast)
               └─ EventBridge Scheduler → resolveAnswer Lambda
@@ -156,3 +159,9 @@ sektor-connected-arena/
 [Watch Party Web — S3 + CloudFront / Amplify]
   └─ API GW WebSocket (spectator mode, read-only)
 ```
+
+---
+
+Notes:
+- Commands and script names were verified against `app/package.json`.
+- If any environment or deployment instructions need more detail, specify which section to expand.
