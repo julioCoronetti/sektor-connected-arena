@@ -1,43 +1,42 @@
-# Smoke Test — Fluxo de Autenticação (V4)
+﻿# Smoke Test — Authentication Flow (V4)
 
-Procedimento de smoke manual para validar o fluxo completo:
+Manual smoke procedure to validate the full flow:
 **cold start → `/login` → `/select-team` → `/community`**
 
-Spec de referência: `corrigir-fluxo-auth-cognito`
+Reference spec: `corrigir-fluxo-auth-cognito`
 
 ---
 
-## Referências de Infraestrutura
+## Infrastructure references
 
-| Recurso            | Valor                          |
-|--------------------|-------------------------------|
+| Resource            | Value                          |
+|--------------------|--------------------------------|
 | Cognito User Pool  | `us-east-1_cHokaMBWW`         |
 | App Client ID      | `68i7il8tnlbc92r8hobs5op7t`   |
-| Região             | `us-east-1`                   |
+| Region             | `us-east-1`                   |
 
 ---
 
-## Pré-condição: Limpar a Sessão Cognito
+## Precondition: Clear Cognito session
 
-O device/emulator deve estar sem sessão Cognito válida antes de iniciar o teste.
-Escolha **uma** das opções abaixo:
+The device/emulator must not have a valid Cognito session before starting the test.
+Choose **one** of the options below:
 
-### Opção A — Sign out pelo app
-1. Abra o app (se já estiver logado).
-2. Navegue até o menu de perfil ou configurações.
-3. Toque em **Sair** / **Sign out**.
-4. Confirme que o app redireciona para `/login`.
+### Option A — Sign out from the app
+1. Open the app (if already logged in).
+2. Go to profile or settings.
+3. Tap **Sign out**.
+4. Confirm the app redirects to `/login`.
 
-### Opção B — Limpar AsyncStorage via DevTools (Expo)
-1. Com o app aberto e o Metro rodando, abra o Expo DevTools no navegador.
-2. Acesse a aba **Storage** → **AsyncStorage**.
-3. Apague todas as chaves relacionadas ao Amplify/Cognito
-   (prefixo `CognitoIdentityServiceProvider.*`).
-4. Force-close o app e reabra.
+### Option B — Clear AsyncStorage via Expo DevTools
+1. With the app open and Metro running, open Expo DevTools in your browser.
+2. Go to **Storage** → **AsyncStorage**.
+3. Delete all keys related to Amplify/Cognito (prefix `CognitoIdentityServiceProvider.*`).
+4. Force-close the app and reopen.
 
-### Opção C — Reinstalar o app (mais confiável)
+### Option C — Reinstall the app (most reliable)
 ```bash
-# Android (emulator ou device via ADB)
+# Android (emulator or device via ADB)
 adb uninstall com.sektor.connectedarena
 npx expo run:android
 
@@ -46,115 +45,102 @@ xcrun simctl uninstall booted com.sektor.connectedarena
 npx expo run:ios
 ```
 
-> **Verificação:** Após limpar a sessão, ao abrir o app ele deve ir direto para
-> `/login` sem passar por `/community` ou `/select-team`.
+> **Check:** After clearing the session, opening the app should go directly to
+> `/login` without passing through `/community` or `/select-team`.
 
 ---
 
-## Passos do Smoke Test
+## Smoke Test Steps
 
-### Passo 1 — Cold start → tela `/login` aparece em ≤ 10 s
+### Step 1 — Cold start → `/login` appears in ≤ 10 s
 
-**Ação:** Feche completamente o app (force-close) e reabra a partir do ícone.
+**Action:** Fully close the app (force-close) and reopen from the icon.
 
-**Critério de aceite:**
-- A tela `/login` (formulário de e-mail e senha) aparece em **no máximo 10 segundos**.
-- **Não há spinner eterno** — o indicador de carregamento (se exibido) desaparece antes de 10 s.
-- O console do Metro **não** exibe `isLoading` preso em `true`.
+**Acceptance criteria:**
+- The `/login` screen (email/password form) appears in **no more than 10 seconds**.
+- **No eternal spinner** — any loader disappears before 10s.
+- Metro console **does not** show `isLoading` stuck on `true`.
 
-**Resultado:** ☐ Passou &nbsp;&nbsp; ☐ Falhou
-
----
-
-### Passo 2 — Login com credenciais de teste → usuário autenticado
-
-**Ação:** Na tela `/login`, insira as credenciais de teste e toque em **Entrar**.
-
-> Credenciais de teste devem ser de um usuário Cognito válido no User Pool
-> `us-east-1_cHokaMBWW` **sem** o atributo `custom:teamId` definido.
-
-**Critério de aceite:**
-- O indicador de carregamento (`isLoading`) aparece brevemente e **libera** após a resposta do Cognito.
-- O usuário é autenticado com sucesso (sem mensagem de erro na tela).
-- O console do Metro **não** exibe erros de autenticação inesperados.
-
-**Resultado:** ☐ Passou &nbsp;&nbsp; ☐ Falhou
+**Result:** ☐ Pass &nbsp;&nbsp; ☐ Fail
 
 ---
 
-### Passo 3 — Tela `/select-team` aparece para usuário sem `custom:teamId`
+### Step 2 — Login with test credentials → user authenticated
 
-**Ação:** Após o login do Passo 2, observe para qual tela o app navega.
+**Action:** On `/login`, enter test credentials and tap **Sign in**.
 
-**Critério de aceite:**
-- O app navega automaticamente para `/select-team`.
-- A tela exibe as opções de time (ex.: "Time A", "Time B").
-- O app **não** navega para `/community` diretamente (pois `custom:teamId` ainda não está definido).
+> Test credentials must belong to a valid Cognito user in User Pool
+> `us-east-1_cHokaMBWW` **without** the `custom:teamId` attribute set.
 
-**Resultado:** ☐ Passou &nbsp;&nbsp; ☐ Falhou
+**Acceptance criteria:**
+- The loading indicator (`isLoading`) appears briefly and clears after Cognito response.
+- The user authenticates successfully (no error shown on screen).
+- Metro console **does not** show unexpected auth errors.
+
+**Result:** ☐ Pass &nbsp;&nbsp; ☐ Fail
 
 ---
 
-### Passo 4 — Selecionar time → sem HTTP 400; navega para `/community`
+### Step 3 — `/select-team` appears for user without `custom:teamId`
 
-**Ação:** Na tela `/select-team`, toque em **"Time A"** (ou o time disponível).
+**Action:** After Step 2 login, observe the screen the app navigates to.
 
-**Critério de aceite:**
-- O console do Metro **NÃO** exibe `HTTP 400` nem a mensagem
+**Acceptance criteria:**
+- The app navigates to `/select-team` automatically.
+- The screen shows available team options (e.g., "Time A", "Time B").
+- The app does NOT navigate straight to `/community` (since `custom:teamId` is not set).
+
+**Result:** ☐ Pass &nbsp;&nbsp; ☐ Fail
+
+---
+
+### Step 4 — Select team → no HTTP 400; navigates to `/community`
+
+**Action:** On `/select-team`, tap **"Time A"** (or the available team).
+
+**Acceptance criteria:**
+- Metro console does NOT show `HTTP 400` nor the message
   `user.custom:teamId: Attribute does not exist in the schema.`
-- O app navega para `/community` após a seleção.
-- O atributo `custom:teamId` é persistido no Cognito (verificável via AWS Console
-  ou `aws cognito-idp admin-get-user --user-pool-id us-east-1_cHokaMBWW --username <email>`).
+- The app navigates to `/community` after selection.
+- The attribute `custom:teamId` is persisted in Cognito (verifiable via AWS Console or `aws cognito-idp admin-get-user --user-pool-id us-east-1_cHokaMBWW --username <email>`).
 
-**Resultado:** ☐ Passou &nbsp;&nbsp; ☐ Falhou
-
----
-
-## Seção de Evidência
-
-Preencha após a execução do smoke test:
-
-| Campo              | Valor                          |
-|--------------------|-------------------------------|
-| Data de execução   |                               |
-| Executor           |                               |
-| Versão do app      |                               |
-| Plataforma         | ☐ Android &nbsp; ☐ iOS        |
-| Device / Emulator  |                               |
-| Branch / Commit    |                               |
-
-### Resultado por passo
-
-| Passo | Descrição                                      | Resultado              |
-|-------|------------------------------------------------|------------------------|
-| 1     | Cold start → `/login` em ≤ 10 s               | ☐ Passou &nbsp; ☐ Falhou |
-| 2     | Login → `isLoading` libera, usuário autenticado | ☐ Passou &nbsp; ☐ Falhou |
-| 3     | `/select-team` para usuário sem `custom:teamId` | ☐ Passou &nbsp; ☐ Falhou |
-| 4     | Tap "Time A" → sem HTTP 400, navega `/community` | ☐ Passou &nbsp; ☐ Falhou |
-
-### Resultado geral
-
-☐ **APROVADO** — todos os passos passaram  
-☐ **REPROVADO** — um ou mais passos falharam
-
-### Observações / Evidências
-
-```
-(cole aqui logs relevantes do Metro, screenshots ou notas adicionais)
-```
+**Result:** ☐ Pass &nbsp;&nbsp; ☐ Fail
 
 ---
 
-## Critério de Conclusão do Spec
+## Evidence section
 
-Este smoke test corresponde à validação **V4** do spec `corrigir-fluxo-auth-cognito`.
-O spec só pode ser marcado como concluído quando **todos os quatro passos** estiverem
-com ☐ marcado como **Passou** e a seção de evidência estiver preenchida.
+Fill after executing the smoke test:
 
-Validações relacionadas:
-- **V1** — Teste automatizado: `initialize()` libera `isLoading` (Jest)
-- **V2** — Teste automatizado: `setTeam()` persiste `custom:teamId` (Jest)
-- **V3** — Script de infra: `scripts/check-cognito-schema.ts` → exit code 0
-- **V4** — Este smoke manual
-- **V5** — Ausência do warning `props.pointerEvents is deprecated` nos logs
-- **V6** — Testes de preservation passando (Jest)
+| Field              | Value                          |
+|--------------------|--------------------------------|
+| Execution date     |                                |
+| Executor           |                                |
+| App version        |                                |
+| Platform           | ☐ Android &nbsp; ☐ iOS        |
+| Device / Emulator  |                                |
+| Branch / Commit    |                                |
+
+### Result per step
+
+| Step | Description                                      | Result              |
+|------|--------------------------------------------------|---------------------|
+| 1    | Cold start → `/login` in ≤ 10 s                  | ☐ Pass &nbsp; ☐ Fail |
+| 2    | Login → `isLoading` clears, user authenticated    | ☐ Pass &nbsp; ☐ Fail |
+| 3    | `/select-team` for user without `custom:teamId`   | ☐ Pass &nbsp; ☐ Fail |
+| 4    | Tap "Time A" → no HTTP 400, navigates to `/community` | ☐ Pass &nbsp; ☐ Fail |
+
+---
+
+## Done criteria for the spec
+
+This smoke test corresponds to spec **V4** of `corrigir-fluxo-auth-cognito`.
+The spec is complete only when **all four steps** are marked **Pass** and the evidence section is filled.
+
+Related validations:
+- **V1** — Automated test: `initialize()` clears `isLoading` (Jest)
+- **V2** — Automated test: `setTeam()` persists `custom:teamId` (Jest)
+- **V3** — Infra script: `scripts/check-cognito-schema.ts` → exit code 0
+- **V4** — This manual smoke test
+- **V5** — Absence of warning `props.pointerEvents is deprecated` in logs
+- **V6** — Preservation tests passing (Jest)

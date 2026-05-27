@@ -1,75 +1,75 @@
-# Descritivo
+﻿# Description
 
-# Documento de Especificação: Sektor
+# Specification Document: Sektor
 
-## 1. Visão Geral
+## 1. Overview
 
-Aplicativo mobile que atua como hub oficial de torcidas. Fora do horário das partidas, funciona como um fórum (rede social). Durante os jogos, a interface muda para o "Modo Arena", onde os torcedores competem em tempo real (Torcida A vs Torcida B) resolvendo micro-previsões geradas a partir de eventos reais do jogo. Os acertos geram "Pressão/Energia" para a torcida em um placar global.
+Mobile application that acts as the official hub for fan crowds. Outside match time it behaves like a forum (social feed). During matches, the UI switches to "Arena Mode", where fans compete in real time (Crowd A vs Crowd B) solving micro-predictions generated from real match events. Correct answers generate "Pressure/Energy" for the crowd on a global scoreboard.
 
-## 2. Funcionalidades Principais
+## 2. Main Features
 
-- **Comunidade (Fórum):** Feed de postagens, comentários e curtidas segmentado pelo time escolhido.
-- **Modo Arena (Tempo Real):** Pop-ups de previsão de eventos acionados pelo andamento da partida.
-- **Barra de Pressão Compartilhada:** Placar visual ao vivo em formato "Cabo de Guerra" que reage matematicamente aos acertos de cada torcida.
-- **Geolocalização / Multiplicador (pode ser simulada):** Validação de presença no estádio para aplicar peso extra (ex: 2x) na pontuação da "Pressão".
-- **Visão AR (pode ser simulada):** Uso da câmera do dispositivo para projetar a "Barra de Pressão" virtualmente sobre o campo.
+- **Community (Forum):** Team-filtered feed with posts, comments and likes.
+- **Arena Mode (Real-time):** Prediction pop-ups triggered by match progress.
+- **Shared PressureBar:** Live visual scoreboard in a "tug-of-war" format that reacts mathematically to each crowd’s correct answers.
+- **Geolocation / Multiplier (can be simulated):** Presence validation in the stadium to apply extra weight (e.g., 2x) to Pressure scoring.
+- **AR View (can be simulated):** Use device camera to project the PressureBar over the field.
 
-## 3. Stack Tecnológica e Ferramentas
+## 3. Tech Stack and Tools
 
-### Interface e Mobile (Frontend)
+### Interface & Mobile (Frontend)
 
-- **React Native + Expo:** Criação do aplicativo mobile (iOS e Android). Acesso nativo à câmera e GPS.
-- **NativeWind:** Biblioteca para estilização de componentes.
-- **AWS Amplify (SDK):** Biblioteca integrada ao código React Native para realizar a comunicação direta com a infraestrutura da AWS.
+- **React Native + Expo:** Mobile app (iOS + Android). Native access to camera and GPS.
+- **NativeWind:** Styling library for components.
+- **AWS Amplify (SDK):** Library used in the React Native code to communicate with AWS infra.
 
-### Autenticação
+### Authentication
 
-- **Amazon Cognito:** Sistema de cadastro, login e armazenamento do atributo base do usuário (Time escolhido).
+- **Amazon Cognito:** Sign-up, sign-in and storing the base user attribute (chosen team).
 
-### Backend e Tempo Real
+### Backend & Real-time
 
-- **Amazon API Gateway (REST):** Requisições assíncronas para o fórum (ler posts, enviar mídia, curtir).
-- **Amazon API Gateway (WebSocket):** Canal de comunicação bidirecional aberto durante o Modo Arena para envio das perguntas e atualização da barra de pressão simultaneamente para todos os usuários.
-- **AWS Lambda:** Execução de rotinas no servidor. Processa acertos/erros de predições, calcula multiplicadores de geolocalização e envia a atualização do estado do jogo para o WebSocket.
+- **Amazon API Gateway (REST):** Async requests for the forum (read posts, upload media, like).
+- **Amazon API Gateway (WebSocket):** Bidirectional channel during Arena Mode to deliver questions and update the PressureBar to all connected users.
+- **AWS Lambda:** Server-side routines. Processes correct/wrong predictions, computes geolocation multipliers and sends updated match state to WebSocket.
 
-### Banco de Dados e Storage
+### Database & Storage
 
-- **Amazon DynamoDB:** Armazenamento das tabelas: Usuários, Posts (Fórum), Estado atual da Partida (Pressão A x B) e Conexões Ativas do WebSocket.
-- **Amazon S3:** Armazenamento de imagens de perfil e arquivos anexados no fórum.
+- **Amazon DynamoDB:** Stores tables: Users, Posts (Forum), Current Match State (Pressure A x B) and Active WebSocket Connections.
+- **Amazon S3:** Stores profile images and attachments posted in the forum.
 
-### Pipeline de Dados da Partida (DFL Feed)
+### Match Data Pipeline (DFL Feed)
 
-- **Script Local em Node/Python (Simulador):** Lê um arquivo JSON (DFL Live Match Mock) e emite os eventos com base nos timestamps.
-- **Amazon Kinesis (pode ser simulada):** Recebe o fluxo contínuo de dados da partida.
-- **Amazon EventBridge:** Escuta os eventos específicos do Kinesis (ex: "Falta Perigosa", "Cartão") e aciona os Lambdas correspondentes.
+- **Local Node/Python script (Simulator):** Reads a JSON file (DFL Live Match Mock) and emits events based on timestamps.
+- **Amazon Kinesis (can be simulated):** Receives the continuous event stream.
+- **Amazon EventBridge:** Listens to events from Kinesis (e.g., "Dangerous Free Kick", "Card") and triggers the corresponding Lambdas.
 
-### Inteligência Artificial
+### Artificial Intelligence
 
 - **Amazon Bedrock (Claude/Llama):**
-    1. Recebe o contexto de um evento (via Lambda) e gera um JSON contendo uma pergunta múltipla escolha instantânea.
-    2. Lê mensagens recentes do chat para gerar um alerta de sentimento (ex: "Torcida do time A está confiante").
+    1. Receives event context (via Lambda) and generates a JSON containing an instant multiple-choice question.
+    2. Reads recent chat messages to generate a sentiment alert (e.g., "Team A fans are confident").
 
-### Integração Física (Espacial)
+### Spatial Integration (AR)
 
-- **Expo Location (pode ser simulada):** Captura lat/long do dispositivo.
-- **Expo Camera / ViroReact (pode ser simulada):** Renderização de camadas visuais AR em cima da captura da câmera.
+- **Expo Location (can be simulated):** Captures device lat/long.
+- **Expo Camera / ViroReact (can be simulated):** Renders AR layers on top of the camera feed.
 
-## 4. Fluxo de Execução do Modo Arena (Exemplo)
+## 4. Arena Mode Execution Flow (Example)
 
-1. O usuário entra no "Modo Arena". Uma conexão persistente é aberta no **API Gateway (WebSocket)**.
-2. O simulador envia um evento ("Time A teve um escanteio") para o **Kinesis**.
-3. O **EventBridge** captura o evento e invoca um **Lambda**.
-4. O Lambda consulta o **Bedrock**: *"Gere uma pergunta de previsão rápida sobre um escanteio"* e recebe a resposta.
-5. O Lambda envia a pergunta via **WebSocket** para as telas de todos os usuários conectados simultaneamente.
-6. Usuário clica em uma resposta. O frontend envia a escolha e as coordenadas de GPS.
-7. Um Lambda calcula: Acertou? Está na área do estádio? (Se sim, multiplica por 2).
-8. Lambda atualiza a tabela de Pontuação no **DynamoDB** e devolve o novo valor da "Barra de Pressão" via **WebSocket**.
-9. A tela de todos os dispositivos é atualizada.
+1. User enters "Arena Mode" and opens a persistent connection to **API Gateway (WebSocket)**.
+2. The simulator emits an event ("Team A had a corner") into **Kinesis**.
+3. **EventBridge** captures the event and invokes a **Lambda**.
+4. Lambda calls **Bedrock**: *"Generate a quick multiple-choice question about a corner"* and receives a response.
+5. Lambda sends the question via **WebSocket** to all connected users’ screens.
+6. A user taps an answer. The frontend sends the choice and GPS coordinates.
+7. A Lambda calculates: Correct? Is the user in the stadium? (If yes, apply 2x multiplier).
+8. Lambda updates the Score table in **DynamoDB** and returns the new PressureBar value via **WebSocket**.
+9. All devices update their screens.
 
-## 5. Mapeamento de Requisitos do Desafio
+## 5. Challenge Requirements Mapping
 
-- **Multiplayer / Real-time:** Sim (WebSockets via API Gateway).
-- **Dados ao vivo DFL:** Sim (Ingestão via Kinesis simulado/EventBridge).
-- **Gamificação:** Sim (Barra de Pressão massiva, pontuação de torcida e multiplicador de check-in).
-- **IA/Personalização:** Sim (Bedrock gerando predições baseadas nos eventos e resumo de sentimentos).
-- **Espacial / Cross-platform:** Sim (Validação de GPS e Mockup funcional em AR via Câmera).
+- **Multiplayer / Real-time:** Yes (WebSockets via API Gateway).
+- **Live DFL data:** Yes (ingestion via Kinesis simulated/EventBridge).
+- **Gamification:** Yes (PressureBar, crowd scoring and check-in multiplier).
+- **AI/Personalization:** Yes (Bedrock generating event-based predictions and sentiment summaries).
+- **Spatial / Cross-platform:** Yes (GPS validation and AR mockup via Camera).

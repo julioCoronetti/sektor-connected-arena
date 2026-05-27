@@ -1,76 +1,76 @@
-# Plano 08 — Fechamento de Código do Challenge
+﻿# Plan 08 — Finalizing the Challenge Code
 
-> **Escopo:** Apenas código. Vídeo, slides, diagrama PNG e zip final ficam fora deste plano (executados manualmente pelo time).
-
----
-
-## Objetivo
-
-Levar o código do Sektor ao estado em que **todos os 6 objetivos do `Challenge.md §6` estão cumpridos em runtime**, prontos para serem demonstrados em vídeo.
-
-Cobre apenas o que precisa ser implementado/alterado em arquivos do repositório.
+> **Scope:** Code only. Video, slides, PNG architecture diagram and the final zip are out of scope for this plan (handled manually by the team).
 
 ---
 
-## Mapeamento Challenge → Estado Atual → Ação de Código
+## Objective
 
-| # | Requisito (§6) | Estado | Ação |
-|---|----------------|--------|------|
-| 1 | Multiplayer 2+ usuários | ✅ | Validar (Fase 6) |
-| 2 | Pipeline DFL → trigger in-app | 🟡 sintético | Replay do feed DFL real (Fase 1) |
-| 3 | Gamificação ≥ 2 mecânicas | 🟡 score + pressão | + Leaderboard + Streaks + Badges (Fase 2) |
-| 4 | IA/personalização Bedrock | 🟡 genérico | Predição personalizada por torcida + Sentiment (Fase 3) |
-| 5 | Touchpoint espacial extra | 🟡 só mobile (AR+GPS) | Watch Party Web (Fase 4) |
-| 6 | Slide North Star | ❌ (fora do escopo) | — |
+Bring the Sektor codebase to a state where **all 6 objectives from `Challenge.md §6` are satisfied at runtime**, ready to be demonstrated in a video.
+
+This plan only covers code changes to repository files.
 
 ---
 
-## Princípios de Simplicidade
+## Mapping: Challenge → Current State → Code Action
 
-- Reaproveitar infra já provisionada. Sem criar serviços novos quando GSI/Lambda extra resolve.
-- Sem novos pacotes no app. Watch Party usa Expo Web do mesmo projeto.
-- Sentiment via Bedrock Nova Lite (Anthropic bloqueado por SCP, Comprehend evitado para não adicionar serviço novo).
-- Personalização lê `Mock User Preferences` direto do bundle do Lambda — sem tabela nova.
-- Watch Party é read-only — consome WS/REST existentes, sem endpoints novos.
-- Replay DFL mantém `lambdas/simulateMatch`, só troca fonte do array hardcoded para JSON oficial.
-
----
-
-## Dependências
-
-- Planos 01–07 concluídos (status confirmado em `docs/status-and-todo.md`)
-- Arquivo `DFL Live Match Mock` disponível (vem do `ISB-UserGuide.pdf`)
-- AWS já provisionada (Cognito, WS, REST, Kinesis, Bedrock, Scheduler)
+| # | Requirement (§6) | State | Action |
+|---|------------------|-------|--------|
+| 1 | Multiplayer 2+ users | ✅ | Validate (Phase 6) |
+| 2 | Pipeline DFL → in-app trigger | 🟡 synthetic | Replay official DFL feed (Phase 1) |
+| 3 | Gamification ≥ 2 mechanics | 🟡 score + pressure | + Leaderboard + Streaks + Badges (Phase 2) |
+| 4 | AI/personalization (Bedrock) | 🟡 generic | Personalized predictions per crowd + Sentiment (Phase 3) |
+| 5 | Extra spatial touchpoint | 🟡 mobile-only (AR+GPS) | Watch Party Web (Phase 4) |
+| 6 | North Star slide | ❌ (out of scope) | — |
 
 ---
 
-## Fase 0 — Higiene
+## Simplicity Principles
 
-> Limpeza pré-requisito. ~30min.
-
-### Tarefas
-
-1. Remover `app/src/services/matchSimulator.ts` e teste correspondente. Buscar imports residuais.
-2. Atualizar `STADIUM_COORDS` em `app/src/constants/config.ts` para coords reais (Allianz Arena `48.2188, 11.6247` ou Signal Iduna Park `51.4926, 7.4519`). Feed DFL é alemão.
-3. Conferir `.env.local`: REST URL, WS URL, Cognito IDs preenchidos.
-4. Atualizar `README.md` raiz (atualmente vazio): seções Stack, Como rodar app, Como rodar simulador, Variáveis de ambiente.
-
-### Validação
-
-- [ ] `tsc --noEmit` no `app/` passa
-- [ ] `grep_search "matchSimulator"` zero resultados
-- [ ] README raiz preenchido
+- Reuse provisioned infra. Do not create new services if GSI/Lambda can solve it.
+- No new packages in the app. Watch Party uses the same Expo Web project.
+- Sentiment via Bedrock Nova Lite (Claude blocked by org SCP, Comprehend avoided to not add a new service).
+- Personalization reads a `Mock User Preferences` JSON bundled with the Lambda — no new table.
+- Watch Party is read-only — consumes existing WS/REST, no new endpoints.
+- Replay DFL keeps `lambdas/simulateMatch` and only switches the hardcoded array source to the official JSON.
 
 ---
 
-## Fase 1 — Replay Feed DFL Real
+## Dependencies
 
-### Localização
+- Plans 01–07 completed (status confirmed in `docs/status-and-todo.md`)
+- `DFL Live Match Mock` JSON available (comes from `ISB-UserGuide.pdf`)
+- AWS already provisioned (Cognito, WS, REST, Kinesis, Bedrock, Scheduler)
 
-- Salvar JSON em `lambdas/simulateMatch/data/dfl-match-events.json`
-- Adicionar ao `.gitignore` se >1MB. Documentar download no README.
+---
 
-### Refator `lambdas/simulateMatch/index.js`
+## Phase 0 — Hygiene
+
+> Pre-requisite cleanup. ~30 min.
+
+### Tasks
+
+1. Remove `app/src/services/matchSimulator.ts` and its test. Find leftover imports.
+2. Update `STADIUM_COORDS` in `app/src/constants/config.ts` to real coords (Allianz Arena `48.2188, 11.6247` or Signal Iduna Park `51.4926, 7.4519`). DFL feed is German.
+3. Check `.env.local`: REST URL, WS URL, Cognito IDs populated.
+4. Update root `README.md` (currently empty): Stack, How to run the app, How to run the simulator, Environment variables.
+
+### Validation
+
+- [ ] `tsc --noEmit` in `app/` passes
+- [ ] `grep_search "matchSimulator"` returns zero results
+- [ ] Root README populated
+
+---
+
+## Phase 1 — Replay Official DFL Feed
+
+### Location
+
+- Save the JSON at `lambdas/simulateMatch/data/dfl-match-events.json`
+- Add to `.gitignore` if >1MB. Document download in README.
+
+### Refactor `lambdas/simulateMatch/index.js`
 
 ```javascript
 const fs = require("fs");
@@ -93,39 +93,39 @@ exports.handler = async (event) => {
 };
 ```
 
-### Mapeamento DFL → app (`lambdas/simulateMatch/dfl-mapping.js`)
+### DFL → app mapping (`lambdas/simulateMatch/dfl-mapping.js`)
 
-| DFL eventType | App eventType | Triggera predição? |
+| DFL eventType | App eventType | Triggers prediction? |
 |---|---|---|
-| `Goal` | `GOAL` | Sim |
-| `CornerKick` | `CORNER` | Sim |
-| `FoulCommitted` | `FOUL` | Sim |
-| `Caution` | `YELLOW_CARD` | Sim |
-| `SendingOff` | `RED_CARD` | Sim |
-| `Substitution` | `SUBSTITUTION` | Não |
-| `KickOff` | `KICK_OFF` | Não |
+| `Goal` | `GOAL` | Yes |
+| `CornerKick` | `CORNER` | Yes |
+| `FoulCommitted` | `FOUL` | Yes |
+| `Caution` | `YELLOW_CARD` | Yes |
+| `SendingOff` | `RED_CARD` | Yes |
+| `Substitution` | `SUBSTITUTION` | No |
+| `KickOff` | `KICK_OFF` | No |
 
-`processEvent.RELEVANT_EVENTS` — adicionar `RED_CARD`.
+Add `RED_CARD` to `processEvent.RELEVANT_EVENTS`.
 
-### Validação
+### Validation
 
-- [ ] `node lambdas/simulateMatch -- match-dfl-001 5` emite eventos lidos do JSON real
-- [ ] `wscat` recebe `PREDICTION` contextualizada por evento DFL
+- [ ] `node lambdas/simulateMatch -- match-dfl-001 5` emits events read from the real JSON
+- [ ] `wscat` receives `PREDICTION` contextualized by DFL event
 
 ---
 
-## Fase 2 — Gamificação Completa
+## Phase 2 — Full Gamification
 
 ### 2.1 Leaderboard
 
-#### GSI em `sektor-scores`
-- Nome: `score-index`
+#### GSI in `sektor-scores`
+- Name: `score-index`
 - PK: `matchId` (S), SK: `score` (N)
 - Projection: `ALL`
 
 #### Lambda `lambdas/getLeaderboard/index.js`
 
-Endpoint REST `GET /leaderboard?matchId={id}&limit=10`.
+Endpoint: `GET /leaderboard?matchId={id}&limit=10`.
 
 ```javascript
 const { DynamoDBClient, QueryCommand } = require("@aws-sdk/client-dynamodb");
@@ -173,23 +173,23 @@ exports.handler = async (event) => {
 
 #### Frontend
 
-- `app/src/app/(tabs)/leaderboard.tsx` — nova aba
-- `app/src/hooks/useLeaderboard.ts` — fetch + polling 30s + atualiza local em `SCORE_UPDATE` WS
-- `app/src/services/api.ts` — adicionar `getLeaderboard(matchId, limit)`
+- `app/src/app/(tabs)/leaderboard.tsx` — new tab
+- `app/src/hooks/useLeaderboard.ts` — fetch + 30s polling + update on `SCORE_UPDATE` WS
+- `app/src/services/api.ts` — add `getLeaderboard(matchId, limit)`
 
-UI: FlatList top N, usuário atual destacado, badges como ícones, streak com 🔥.
+UI: FlatList top N, current user highlighted, badges as icons, streak with 🔥.
 
 ### 2.2 Streaks
 
-#### Mudança em `lambdas/resolveAnswer/index.js`
+#### Change in `lambdas/resolveAnswer/index.js`
 
-`updateUserScore` precisa lidar com 3 casos:
+`updateUserScore` must handle 3 cases:
 
-- **Acerto**: `ADD currentStreak :one`. Após retorno, se `currentStreak > bestStreak`, segundo `UpdateItem` setando `bestStreak = currentStreak`.
-- **Erro**: `SET currentStreak = :zero`.
-- **Idempotência**: manter `processedPredictions` set, condição `NOT contains`.
+- **Correct:** `ADD currentStreak :one`. After return, if `currentStreak > bestStreak`, second `UpdateItem` sets `bestStreak = currentStreak`.
+- **Wrong:** `SET currentStreak = :zero`.
+- **Idempotency:** keep `processedPredictions` set, condition `NOT contains`.
 
-Trade-off aceito: até 2 writes por acerto vs transação.
+Trade-off accepted: up to 2 writes per correct answer vs transaction.
 
 ### 2.3 Badges
 
@@ -221,9 +221,9 @@ function evaluateBadges(currentBadges, scoreState) {
 module.exports = { BADGES, evaluateBadges };
 ```
 
-Após `UpdateItem` retornar `ALL_NEW`, se houver `newlyUnlocked`, terceiro update `ADD badges :newBadges`.
+After `UpdateItem` returns `ALL_NEW`, if `newlyUnlocked` exists, perform a third update `ADD badges :newBadges`.
 
-### 2.4 Protocolo WS — extensão de `SCORE_UPDATE`
+### 2.4 WS Protocol — extend `SCORE_UPDATE`
 
 `app/src/services/arenaProtocol.ts`:
 
@@ -240,33 +240,33 @@ Após `UpdateItem` retornar `ALL_NEW`, se houver `newlyUnlocked`, terceiro updat
   }
 ```
 
-Atualizar type guard. Atualizar `arenaStore.UserScore` para incluir `currentStreak`/`bestStreak`/`badges`.
+Update the type guard. Update `arenaStore.UserScore` to include `currentStreak`/`bestStreak`/`badges`.
 
-### 2.5 UI extras
+### 2.5 Extra UI
 
-- 🔥 ao lado do score quando `currentStreak >= 3` (em arena + leaderboard + profile)
-- Toast/modal quando `badgesUnlocked` chega
-- Card "Suas conquistas" em `profile.tsx`
+- 🔥 next to the score when `currentStreak >= 3` (in arena + leaderboard + profile)
+- Toast/modal when `badgesUnlocked` arrives
+- "Your achievements" card on `profile.tsx`
 
-### Validação
+### Validation
 
-- [ ] `score-index` GSI provisionado
-- [ ] `/leaderboard` autorizado por Cognito retorna top N ordenado
-- [ ] Streak incrementa em acertos consecutivos, zera em erro
-- [ ] Badges desbloqueados disparam toast
+- [ ] `score-index` GSI provisioned
+- [ ] `/leaderboard` authorized by Cognito returns top N ordered
+- [ ] Streak increments on consecutive correct answers, resets on wrong
+- [ ] Badges unlocked trigger a toast
 
 ---
 
-## Fase 3 — IA: Personalização + Sentiment
+## Phase 3 — AI: Personalization + Sentiment
 
-### 3.1 Predição Personalizada por Torcida
+### 3.1 Personalized Predictions by Crowd
 
 #### `lambdas/processEvent/preferences.js`
 
 ```javascript
 const PREFERENCES = {
-  "team-a": { teamName: "FC Team", style: "estatistico", tone: "técnico" },
-  "team-b": { teamName: "Club", style: "casual", tone: "descontraído" },
+  "team-a": { teamName: "FC Team", style: "statistical", tone: "technical" },
+  "team-b": { teamName: "Club", style: "casual", tone: "casual" },
 };
 
 function getTeamPreferences(teamId) {
@@ -276,63 +276,49 @@ function getTeamPreferences(teamId) {
 module.exports = { getTeamPreferences };
 ```
 
-Quando o `Mock User Preferences` oficial chegar, popular este arquivo com o JSON real.
+When the official `Mock User Preferences` arrives, populate this file with the real JSON.
 
-#### Estratégia
+#### Strategy
 
-Gerar 2 predições por evento (Torcida A e Torcida B), distribuir por `teamId` da conexão. Custo: 2 invocações Bedrock por evento. `sektor-connections` já guarda `teamId`.
+Generate 2 predictions per event (Crowd A and Crowd B), distribute by `teamId` of the connection. Cost: 2 Bedrock invocations per event. `sektor-connections` already stores `teamId`.
 
-#### Refator `lambdas/processEvent/index.js`
+Refactor `lambdas/processEvent/index.js` to generate predictionTeamA and predictionTeamB and distribute them to connections grouped by team.
 
-```javascript
-const predictionTeamA = await generatePrediction(payload, { audienceTeamId: "team-a" });
-const predictionTeamB = await generatePrediction(payload, { audienceTeamId: "team-b" });
+Ensure `schedulePredictionResolution` is called for BOTH predictions (each with its own `predictionId`). `correctOption` may differ between versions — `resolveAnswer` resolves each prediction independently.
 
-const connections = await getActiveConnections(payload.matchId);
-const byTeam = groupBy(connections, (c) => c.teamId ?? "team-a");
-
-await distributeToConnections(byTeam["team-a"] ?? [], predictionTeamA);
-await distributeToConnections(byTeam["team-b"] ?? [], predictionTeamB);
-```
-
-Atualizar `getActiveConnections` para retornar `{ connectionId, teamId }` (hoje retorna só array de IDs).
-
-`schedulePredictionResolution` precisa ser chamado para AMBAS as predições (cada uma com seu `predictionId` próprio). `correctOption` pode divergir entre versões — `resolveAnswer` resolve cada predição independente.
-
-#### Prompt atualizado
+#### Updated prompt
 
 ```
-Você é assistente de futebol para a torcida do {audienceTeamName}.
-Evento: {eventType} no minuto {minute}.
-Gere pergunta de previsão rápida (próximos 30s), em português, tom {tone},
-com 4 opções, viés sutil pró-torcida sem mentir sobre fatos.
-Responda APENAS JSON: {"question": "...", "options": [...], "correctOption": 0}
+You are a football assistant for the {audienceTeamName} crowd.
+Event: {eventType} at minute {minute}.
+Generate a quick multiple-choice prediction (next 30s), in Portuguese, tone {tone},
+with 4 options, subtly biased toward the crowd without lying about facts.
+Respond ONLY JSON: {"question": "...", "options": [...], "correctOption": 0}
 ```
 
-### 3.2 Sentiment Analysis do Fórum
+### 3.2 Forum Sentiment Analysis
 
 #### `lambdas/analyzeSentiment/index.js`
 
-Trigger: EventBridge Scheduler `rate(2 minutes)` durante partida live. Grupo `sektor-sentiment-jobs`.
+Trigger: EventBridge Scheduler `rate(2 minutes)` during a live match. Group `sektor-sentiment-jobs`.
 
-Fluxo:
-1. Query `sektor-posts` por `teamId` últimos 50 posts (precisa GSI `teamId-createdAt-index`; verificar se já existe — comunidade usa filtro por team)
-2. Concatenar texts (truncar 4k chars/time)
+Flow:
+1. Query `sektor-posts` by `teamId` for the last 50 posts (needs GSI `teamId-createdAt-index` — check if exists)
+2. Concatenate texts (truncate to 4k chars per run)
 3. Bedrock Nova Lite:
 
 ```
-Analise o sentimento dominante destes posts da torcida do {teamName}.
-Categorias: confiante, ansiosa, eufórica, decepcionada, neutra.
-Responda APENAS JSON: {"sentiment": "...", "intensity": 0-100, "summary": "frase curta"}
+Analyze the dominant sentiment of these posts from {teamName} fans.
+Categories: confident, anxious, euphoric, disappointed, neutral.
+Respond ONLY JSON: {"sentiment": "...", "intensity": 0-100, "summary": "short sentence"}
 
 Posts:
-{textos}
+{texts}
 ```
 
-4. Persistir em `sektor-sentiment` (tabela nova):
+4. Persist to `sektor-sentiment` (new table):
    - PK `matchId` (S), SK `teamId` (S)
    - `sentiment` (S), `intensity` (N), `summary` (S), `updatedAt` (S), TTL
-
 5. Broadcast WS `SENTIMENT_ALERT`:
 
 ```typescript
@@ -347,49 +333,49 @@ Posts:
 
 #### UI
 
-- Banner discreto acima da `PressureBar` quando `intensity >= 60`
-- Cor por sentimento (verde=eufórica, amarelo=ansiosa, vermelho=decepcionada, cinza=neutra)
-- Auto-dismiss 30s ou novo alerta
+- Discrete banner above the `PressureBar` when `intensity >= 60`
+- Color by sentiment (green=euphoric, yellow=anxious, red=disappointed, gray=neutral)
+- Auto-dismiss after 30s or on new alert
 
-### Validação
+### Validation
 
-- [ ] Predição diferente por torcida (2 contas em times opostos recebem questions distintas)
-- [ ] Sentiment job roda 2/2min, escreve Dynamo, dispara WS
-- [ ] Banner aparece com tom correto
+- [ ] Prediction differs by crowd (2 accounts on opposite teams receive distinct questions)
+- [ ] Sentiment job runs every 2 minutes, writes Dynamo, emits WS
+- [ ] Banner appears with correct tone
 
 ---
 
-## Fase 4 — Watch Party Web
+## Phase 4 — Watch Party Web
 
 ### Stack
 
-Reaproveitar Expo Web (projeto já é Expo). Sem app separado.
+Reuse Expo Web (the project is already Expo). No separate app.
 
-- Rota `app/src/app/watch-party/[matchId].tsx`
-- URL pública: `/watch-party/{matchId}`
-- Sem auth (modo público p/ TV/projetor). Só leitura.
-- Layout 16:9, fonte grande, sem chrome mobile.
+- Route `app/src/app/watch-party/[matchId].tsx`
+- Public URL: `/watch-party/{matchId}`
+- No auth (public mode for TV/projector). Read-only.
+- 16:9 layout, large font, minimal chrome for mobile.
 
-### Componente principal
+### Main component
 
 ```
 WatchPartyScreen (full-screen)
-├─ Cabeçalho: placar + minuto + status WS (font 4xl+)
-├─ PressureBar (50% da tela)
-├─ MiniLeaderboard lateral (top 5, ao vivo)
-├─ SentimentAlert banner quando ativo
-└─ PredictionCard centralizado (sem botões — só mostra)
+├─ Header: scoreboard + minute + WS status (font 4xl+)
+├─ PressureBar (50% of the screen)
+├─ MiniLeaderboard side (top 5, live)
+├─ SentimentAlert banner when active
+└─ PredictionCard centered (no buttons — read-only)
 ```
 
 ### WebSocket spectator
 
-`app/src/hooks/useWebSocket.ts` — aceitar URL com `mode=spectator` (sem token).
+`app/src/hooks/useWebSocket.ts` — accept URL with `mode=spectator` (no token).
 
-`lambdas/wsConnect/index.js` — quando `mode=spectator`:
-- Persistir conexão com `userId=spectator-{connectionId}`, `teamId=null`
-- Não receber predições personalizadas (cair em `team-a` por padrão ou criar variante neutra)
+`lambdas/wsConnect/index.js` — when `mode=spectator`:
+- Persist connection with `userId=spectator-{connectionId}`, `teamId=null`
+- Do not receive personalized predictions (fall back to `team-a` or neutral variant)
 
-`lambdas/submitAnswer/index.js` — rejeitar `userId` que comece com `spectator-` (`UNAUTHORIZED`).
+`lambdas/submitAnswer/index.js` — reject `userId` starting with `spectator-` (`UNAUTHORIZED`).
 
 ### Build
 
@@ -398,113 +384,113 @@ cd app
 npx expo export --platform web
 ```
 
-Hospedar via Amplify Hosting ou S3+CloudFront. URL → README.
+Host via Amplify Hosting or S3+CloudFront. Put URL in README.
 
-### Validação
+### Validation
 
-- [ ] URL pública carrega Watch Party em laptop/TV
-- [ ] PressureBar atualiza ao vivo conforme respostas no mobile
-- [ ] Leaderboard atualiza
-- [ ] Visual ok em 1920x1080
-
----
-
-## Fase 5 — Acessibilidade (Código)
-
-### Tarefas
-
-1. Adicionar `accessibilityLabel` em todos os `TouchableOpacity` ícone-only (botão AR, FAB de criar post, switch de tema já tem)
-2. `accessibilityRole` em interativos (`button`, `switch`, `link`)
-3. Garantir tamanho mínimo de toque 44x44 (PredictionCard options, ícones de like)
-4. Modo tutorial primeiro login: 3 cards (Arena/Pressão/Comunidade). Flag salva em `custom:onboardingComplete` no Cognito (ou AsyncStorage para ser mais simples)
-
-### Validação
-
-- [ ] `accessibilityLabel` em todos os ícone-only botões
-- [ ] Tutorial aparece só no primeiro login
+- [ ] Public URL loads Watch Party on laptop/TV
+- [ ] PressureBar updates live according to mobile answers
+- [ ] Leaderboard updates
+- [ ] Visual looks okay at 1920x1080
 
 ---
 
-## Fase 6 — Smoke E2E Multi-jogador
+## Phase 5 — Accessibility (Code)
 
-### Cenário
+### Tasks
 
-1. 2 usuários no Cognito: `fan-a@test.com` (`team-a`), `fan-b@test.com` (`team-b`)
-2. Simulador rodando: `npm run simulate match-demo-001 5`
-3. Dispositivo A logado como `fan-a`, GPS mock dentro do estádio (mult 2x)
-4. Dispositivo B logado como `fan-b`, GPS fora (mult 1x)
-5. Browser em `https://.../watch-party/match-demo-001`
+1. Add `accessibilityLabel` to all icon-only `TouchableOpacity` (AR button, create post FAB; theme switch already has one)
+2. `accessibilityRole` on interactive elements (`button`, `switch`, `link`)
+3. Ensure minimum touch target 44x44 (PredictionCard options, like icons)
+4. First-login tutorial: 3 cards (Arena/Pressure/Community). Flag saved in `custom:onboardingComplete` in Cognito (or AsyncStorage for simplicity)
 
-### Verificações
+### Validation
 
-- [ ] Ambos recebem `PREDICTION` quase simultânea
-- [ ] Variante de A diferente de B (Fase 3.1)
-- [ ] Ambos respondem; `ANSWER_ACCEPTED` chega
-- [ ] Após 15s, `PREDICTION_RESULT` + `SCORE_UPDATE` + `PRESSURE_UPDATE`
-- [ ] Score de A reflete 2x quando acerta
-- [ ] Watch Party reflete tudo
-- [ ] Leaderboard mostra A e B ordenados
-- [ ] Após 5+ acertos seguidos, badge `streak-5` desbloqueia em A
-- [ ] Sentiment alert aparece após posts no fórum
+- [ ] `accessibilityLabel` present on all icon-only buttons
+- [ ] Tutorial shows only on first login
 
 ---
 
-## Checklist Final (Código)
+## Phase 6 — Smoke E2E Multiplayer
 
-### Cobertura `Challenge.md §6`
+### Scenario
 
-- [ ] Multijogador 2+ usuários (Fase 6)
-- [ ] Pipeline DFL real (Fase 1)
-- [ ] Gamificação 5 mecânicas: score + pressão + leaderboard + streaks + badges (Fase 2)
-- [ ] Bedrock personalização por torcida + sentiment (Fase 3)
-- [ ] Touchpoint extra Watch Party Web (Fase 4)
+1. 2 Cognito users: `fan-a@test.com` (`team-a`), `fan-b@test.com` (`team-b`)
+2. Simulator running: `npm run simulate match-demo-001 5`
+3. Device A logged as `fan-a`, GPS mock inside stadium (mult 2x)
+4. Device B logged as `fan-b`, GPS outside (mult 1x)
+5. Browser at `https://.../watch-party/match-demo-001`
 
-### Débitos `status-and-todo.md`
+### Checks
 
-- [ ] `matchSimulator.ts` mock removido (Fase 0)
-- [ ] `STADIUM_COORDS` reais (Fase 0)
-- [ ] README raiz preenchido (Fase 0)
+- [ ] Both receive `PREDICTION` nearly simultaneously
+- [ ] Variant for A differs from B (Phase 3.1)
+- [ ] Both answer; `ANSWER_ACCEPTED` arrives
+- [ ] After 15s, `PREDICTION_RESULT` + `SCORE_UPDATE` + `PRESSURE_UPDATE`
+- [ ] A's score reflects 2x when correct and in-stadium
+- [ ] Watch Party reflects everything
+- [ ] Leaderboard shows A and B ordered
+- [ ] After 5+ consecutive correct answers, badge `streak-5` unlocks for A
+- [ ] Sentiment alert appears after forum posts
+
+---
+
+## Final Checklist (Code)
+
+### Coverage of `Challenge.md §6`
+
+- [ ] Multiplayer 2+ users (Phase 6)
+- [ ] Official DFL pipeline (Phase 1)
+- [ ] 5 gamification mechanics: score + pressure + leaderboard + streaks + badges (Phase 2)
+- [ ] Bedrock personalization per crowd + sentiment (Phase 3)
+- [ ] Extra touchpoint Watch Party Web (Phase 4)
+
+### Debts `status-and-todo.md`
+
+- [ ] `matchSimulator.ts` mock removed (Phase 0)
+- [ ] `STADIUM_COORDS` real values (Phase 0)
+- [ ] Root README populated (Phase 0)
 
 ### Build & Tests
 
-- [ ] `tsc --noEmit` no `app/` sem erros
-- [ ] Suite de testes existentes passa
-- [ ] Lint passa
-- [ ] Build web `expo export --platform web` sem erros
+- [ ] `tsc --noEmit` in `app/` passes
+- [ ] Existing test suite passes
+- [ ] Lint passes
+- [ ] Web build `expo export --platform web` passes
 
 ---
 
-## Riscos e Mitigações
+## Risks and Mitigations
 
-| Risco | Mitigação |
-|-------|-----------|
-| Feed DFL não disponível | Manter eventos sintéticos como fallback; documentar |
-| Bedrock retorna JSON inválido | Já tem try/catch em `processEvent`; adicionar parser tolerante (regex extrair JSON) |
-| 2 invocações Bedrock por evento estouram quota | Cair para predição única em throttle |
-| Watch Party WS sem auth abre abuso | `mode=spectator` rejeita `submitAnswer` no Lambda; rate-limit no `wsConnect` por IP |
-| Sentiment retorna idioma errado | Reforçar prompt PT-BR + validação de schema |
+| Risk | Mitigation |
+|------|------------|
+| DFL feed unavailable | Keep synthetic events as fallback; document |
+| Bedrock returns invalid JSON | Already have try/catch in `processEvent`; add tolerant parser (regex extract JSON) |
+| 2 Bedrock invocations per event exceed quota | Fall back to single prediction with throttling |
+| Watch Party WS without auth allows abuse | `mode=spectator` rejects `submitAnswer` in Lambda; rate-limit `wsConnect` by IP |
+| Sentiment returns wrong language | Enforce PT-BR in prompt + schema validation |
 
 ---
 
-## Fora do Escopo (Manual)
+## Out of Scope (Manual)
 
-Os itens abaixo NÃO são código e ficam para execução manual:
+The items below are NOT code and must be executed manually:
 
 - `architecture.png`
 - `executive_summary.pdf` (5 slides)
 - `presentation_video.mp4`
 - `github_link.txt`
-- Zip final `<NomeDoTime>.zip`
-- Submissão via Box
+- Final zip `<TeamName>.zip`
+- Submission via Box
 
 ---
 
-## Próxima Ação
+## Next Action
 
-1. Confirmar disponibilidade do `DFL Live Match Mock JSON` (Fase 1)
-2. Iniciar Fase 0 (higiene) — pré-requisito de tudo
-3. Em paralelo após Fase 0:
-   - branch `feat/leaderboard-streaks-badges` (Fase 2)
-   - branch `feat/bedrock-personalization-sentiment` (Fase 3)
-   - branch `feat/watch-party-web` (Fase 4)
-4. Fase 5 (a11y) e Fase 6 (smoke) ao final
+1. Confirm availability of the `DFL Live Match Mock JSON` (Phase 1)
+2. Start Phase 0 (hygiene) — prerequisite for everything
+3. In parallel after Phase 0:
+   - branch `feat/leaderboard-streaks-badges` (Phase 2)
+   - branch `feat/bedrock-personalization-sentiment` (Phase 3)
+   - branch `feat/watch-party-web` (Phase 4)
+4. Phase 5 (a11y) and Phase 6 (smoke) at the end

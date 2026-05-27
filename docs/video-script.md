@@ -1,105 +1,105 @@
-# Roteiro — presentation_video.mp4
+﻿# Script — presentation_video.mp4
 
-**Duração total:** ≤ 3 minutos | **Resolução:** 720p ou menor | **Ferramenta:** OBS / Quicktime / Loom
-
----
-
-## Preparação antes de gravar
-
-1. Abrir app no simulador Android/iOS (ou device físico)
-2. Abrir Watch Party no browser: `https://vzgv26s18d.execute-api.us-east-1.amazonaws.com/prod` → navegar para `/watch-party/match-001` (após build web)
-3. Ter 2 contas prontas: `fan-a` (team-a) e `fan-b` (team-b)
-4. Simulador pronto para rodar: `npm run simulate match-001 3`
+**Total duration:** ≤ 3 minutes | **Resolution:** 720p or lower | **Tool:** OBS / Quicktime / Loom
 
 ---
 
-## Cenas
+## Preparation before recording
 
-### 0:00 – 0:20 | Pitch (voz + slide ou tela preta com texto)
-
-> "Fãs de futebol não querem só assistir. Querem participar, competir e sentir que fazem diferença no jogo. O Sektor transforma cada evento em campo em um momento de engajamento coletivo em tempo real."
-
-**Tela:** Logo Sektor ou slide de abertura.
-
----
-
-### 0:20 – 0:45 | Login + Seleção de Time
-
-**Ações na tela:**
-1. Abrir app → tela de login
-2. Entrar com `fan-a@test.com`
-3. Mostrar seleção de time (FC Team)
-4. Chegar na tela Home (Community)
-
-**Fala:**
-> "Cada fã escolhe seu time. A partir daí, tudo é personalizado — o fórum, as predições, a barra de pressão."
+1. Open the app on an Android/iOS simulator (or physical device)
+2. Open Watch Party in a browser: `https://vzgv26s18d.execute-api.us-east-1.amazonaws.com/prod` → navigate to `/watch-party/match-001` (after web build)
+3. Have 2 accounts ready: `fan-a` (team-a) and `fan-b` (team-b)
+4. Simulator ready to run: `npm run simulate match-001 3`
 
 ---
 
-### 0:45 – 1:30 | Modo Arena — Predição ao Vivo
+## Scenes
 
-**Ações na tela:**
-1. Tocar em "Arena" → "Entrar na Partida Demo"
-2. Mostrar tela da Arena: placar, barra de pressão, status "Ao vivo"
-3. Em outro terminal (fora da gravação): `npm run simulate match-001 3`
-4. Aguardar ~5s → PredictionCard aparece com pergunta gerada pelo Bedrock
-5. Responder uma opção
-6. Mostrar ANSWER_ACCEPTED + score subindo
-7. Após 15s: PREDICTION_RESULT + PRESSURE_UPDATE animando a barra
+### 0:00 – 0:20 | Pitch (voice + slide or black screen with text)
 
-**Fala:**
-> "Quando um gol ou falta acontece, o Bedrock gera uma predição instantânea personalizada para a torcida. O fã responde em 15 segundos. Acertou? Pontos e pressão para o time."
+> "Football fans don’t just want to watch. They want to participate, compete and feel they make a difference in the match. Sektor turns every match event into a moment of real-time collective engagement."
+
+**Visual:** Sektor logo or opening slide.
 
 ---
 
-### 1:30 – 2:00 | Multiplayer — 2 Torcidas Simultâneas
+### 0:20 – 0:45 | Login + Team Selection
 
-**Ações na tela:**
-1. Split screen ou corte rápido: device A (FC Team) e device B (Club) lado a lado
-2. Mostrar que cada um recebe uma pergunta diferente (personalização por torcida)
-3. Mostrar leaderboard atualizando com os dois usuários
+**On-screen actions:**
+1. Open the app → login screen
+2. Sign in as `fan-a@test.com`
+3. Show team selection (e.g., FC Team)
+4. Arrive at Home (Community)
 
-**Fala:**
-> "Dois fãs, dois times, duas perspectivas. As predições são personalizadas por torcida. O leaderboard ao vivo mostra quem está dominando."
+**Voice:**
+> "Each fan chooses their team. From then on, everything is personalized — the forum, the predictions, the PressureBar."
+
+---
+
+### 0:45 – 1:30 | Arena Mode — Live Prediction
+
+**On-screen actions:**
+1. Tap "Arena" → "Enter Demo Match"
+2. Show Arena screen: scoreboard, pressure bar, status "Live"
+3. In another terminal (not recorded): `npm run simulate match-001 3`
+4. Wait ~5s → PredictionCard appears with Bedrock-generated question
+5. Answer an option
+6. Show ANSWER_ACCEPTED + score increasing
+7. After 15s: PREDICTION_RESULT + PRESSURE_UPDATE animates the bar
+
+**Voice:**
+> "When a goal or foul happens, Bedrock generates an instant personalized prediction for the crowd. Fans answer in 15 seconds. Correct? Points and pressure for the team."
+
+---
+
+### 1:30 – 2:00 | Multiplayer — 2 Crowds Simultaneous
+
+**On-screen actions:**
+1. Split screen or quick cut: device A (FC Team) and device B (Club) side-by-side
+2. Show that each receives a different question (crowd personalization)
+3. Show leaderboard updating with both users
+
+**Voice:**
+> "Two fans, two teams, two perspectives. Predictions are personalized by crowd. The live leaderboard shows who’s leading."
 
 ---
 
 ### 2:00 – 2:20 | Watch Party Web + GPS
 
-**Ações na tela:**
-1. Mostrar browser com Watch Party: placar grande, barra de pressão, top 5
-2. Mostrar badge GPS "📍 Na Arena 2x" no app (simular GPS dentro do estádio)
-3. Mostrar streak 🔥 e badge desbloqueado
+**On-screen actions:**
+1. Show browser Watch Party: big scoreboard, pressure bar, top 5
+2. Show GPS badge "📍 In Stadium 2x" in the app (simulate GPS inside the stadium)
+3. Show streak 🔥 and an unlocked badge
 
-**Fala:**
-> "A Watch Party roda no browser — perfeita para telão em bares e estádios. Fãs presenciais ganham multiplicador 2x. Sequências de acertos desbloqueiam conquistas."
-
----
-
-### 2:20 – 2:40 | AR + Comunidade
-
-**Ações na tela:**
-1. Tocar no botão "Modo AR" → câmera abre com overlay da barra de pressão
-2. Corte rápido para aba Community: feed de posts do time, criar post
-
-**Fala:**
-> "No modo AR, a barra de pressão aparece sobre a câmera — pronto para o estádio. Entre os jogos, a comunidade mantém o engajamento vivo."
+**Voice:**
+> "The Watch Party runs in the browser — perfect for big screens in bars and stadiums. On-site fans get a 2x multiplier. Consecutive correct answers unlock achievements."
 
 ---
 
-### 2:40 – 3:00 | North Star + Encerramento
+### 2:20 – 2:40 | AR + Community
 
-**Tela:** Slide do ecossistema (mobile + web + AR + wearable + estádio)
+**On-screen actions:**
+1. Tap "AR Mode" → camera opens with pressure bar overlay
+2. Cut to Community tab: team feed, create post
 
-**Fala:**
-> "O Sektor é um ecossistema. Mobile, web, AR, wearables, estádio — tudo conectado, tudo em tempo real. Construído sobre AWS: Kinesis, Bedrock, API Gateway WebSocket, DynamoDB. Obrigado."
+**Voice:**
+> "In AR mode, the PressureBar appears over the camera — ready for the stadium. Between matches, the community keeps engagement alive."
 
 ---
 
-## Dicas de gravação
+### 2:40 – 3:00 | North Star + Closing
 
-- Gravar em 1280x720 ou 960x540 (abaixo de 720p conforme regra do challenge)
-- Usar OBS com cena "Tela + Webcam pequena" ou só tela
-- Não precisa de edição — gravação contínua é aceita
-- Se travar: pausar OBS, retomar, cortar no editor depois
-- Fundo do app já é escuro (#0F0F0F) — fica bem em qualquer gravação
+**Visual:** Ecosystem slide (mobile + web + AR + wearable + stadium)
+
+**Voice:**
+> "Sektor is an ecosystem. Mobile, web, AR, wearables, stadium — all connected, all real-time. Built on AWS: Kinesis, Bedrock, API Gateway WebSocket, DynamoDB. Thank you."
+
+---
+
+## Recording tips
+
+- Record at 1280x720 or 960x540 (below 720p as per challenge rule)
+- Use OBS with a "Screen + small Webcam" scene or screen-only
+- No complex editing required — continuous recording is accepted
+- If it freezes: pause OBS, resume, cut later in editor
+- App background is dark (#0F0F0F) — works well on recordings

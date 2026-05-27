@@ -1,35 +1,35 @@
-# Sektor — Planos de Implementação
+﻿# Sektor — Implementation Plans
 
-Guia de implementação do app Sektor dividido em 6 planos incrementais.
+Implementation guide for the Sektor app split into incremental plans.
 
-**Princípio central de todos os planos:** código e arquitetura o mais simples possível. Sem over-engineering, sem abstrações prematuras. Cada plano entrega valor funcional sem quebrar o que foi feito antes.
+**Core principle for all plans:** keep code and architecture as simple as possible. No over-engineering, no premature abstractions. Each plan must deliver functional value without breaking previous work.
 
 ---
 
-## Ordem de Execução
+## Execution order
 
 ```
-Plano 01 → Plano 02 → Plano 03 → Plano 04
+Plan 01 → Plan 02 → Plan 03 → Plan 04
                                          ↘
-                    Plano 05 ─────────────→ Plano 06
+                    Plan 05 ─────────────→ Plan 06
 ```
 
-> Os Planos 04 e 05 podem ser desenvolvidos em paralelo após o Plano 03.
+> Plans 04 and 05 can be developed in parallel after Plan 03.
 
 ---
 
-## Planos
+## Plans
 
-| # | Arquivo | O que entrega | Depende de |
-|---|---------|---------------|------------|
-| 01 | [plano-01-fundacao.md](./plano-01-fundacao.md) | Estrutura de pastas, navegação (tabs + auth), tipos TypeScript, NativeWind, telas skeleton | — |
-| 02 | [plano-02-autenticacao.md](./plano-02-autenticacao.md) | Cognito + Amplify, login, cadastro, escolha de time, authStore, proteção de rotas | 01 |
-| 03 | [plano-03-modo-arena.md](./plano-03-modo-arena.md) | WebSocket, PressureBar, PredictionCard, arenaStore, fluxo completo com mock | 01, 02 |
-| 04 | [plano-04-simulador-pipeline.md](./plano-04-simulador-pipeline.md) | Script simulador DFL, Kinesis → EventBridge → Lambda → Bedrock → WebSocket | 03 |
-| 05 | [plano-05-comunidade.md](./plano-05-comunidade.md) | Feed de posts, criar post, curtidas otimistas, comentários, upload S3 | 01, 02 |
-| 06 | [plano-06-gps-ar-polimento.md](./plano-06-gps-ar-polimento.md) | GPS multiplicador 2x, AR mockup via câmera, tema visual Sektor | 01–05 |
-| 07 | [plano-07-integracao-aws.md](./plano-07-integracao-aws.md) | Conectar app à AWS real, remover mocks, smoke multijogador | 01–06 |
-| 08 | [plano-08-final-challenge.md](./plano-08-final-challenge.md) | Fechamento do Challenge: DFL real, leaderboard/streaks/badges, sentiment, Watch Party Web, entregáveis | 07 |
+| # | File | What it delivers | Depends on |
+|---|------|------------------|------------|
+| 01 | [plano-01-fundacao.md](./plano-01-fundacao.md) | Folder structure, navigation (tabs + auth), TypeScript types, NativeWind, skeleton screens | — |
+| 02 | [plano-02-autenticacao.md](./plano-02-autenticacao.md) | Cognito + Amplify, login, register, team selection, authStore, route protection | 01 |
+| 03 | [plano-03-modo-arena.md](./plano-03-modo-arena.md) | WebSocket, PressureBar, PredictionCard, arenaStore, flow with mock | 01, 02 |
+| 04 | [plano-04-simulador-pipeline.md](./plano-04-simulador-pipeline.md) | DFL simulator script, Kinesis → EventBridge → Lambda → Bedrock → WebSocket | 03 |
+| 05 | [plano-05-comunidade.md](./plano-05-comunidade.md) | Posts feed, create post, optimistic likes, comments, S3 uploads | 01, 02 |
+| 06 | [plano-06-gps-ar-polimento.md](./plano-06-gps-ar-polimento.md) | GPS 2x multiplier, AR mockup via camera, visual polish | 01–05 |
+| 07 | [plano-07-integracao-aws.md](./plano-07-integracao-aws.md) | Connect the app to real AWS infra, remove mocks, multiplayer smoke | 01–06 |
+| 08 | [plano-08-final-challenge.md](./plano-08-final-challenge.md) | Challenge finalization: DFL real feed, leaderboard/streaks/badges, sentiment, Watch Party Web, deliverables | 07 |
 
 ---
 
@@ -37,7 +37,7 @@ Plano 01 → Plano 02 → Plano 03 → Plano 04
 
 - **Frontend:** React Native + Expo + NativeWind + Expo Router
 - **Auth:** Amazon Cognito via AWS Amplify SDK
-- **Backend:** API Gateway REST (fórum) + API Gateway WebSocket (arena) + AWS Lambda
+- **Backend:** API Gateway REST (forum) + API Gateway WebSocket (arena) + AWS Lambda
 - **DB:** DynamoDB + S3
 - **Pipeline:** Kinesis → EventBridge → Lambda → Bedrock (Claude)
-- **Espacial:** Expo Location (GPS) + Expo Camera (AR mockup)
+- **Spatial:** Expo Location (GPS) + Expo Camera (AR mockup)

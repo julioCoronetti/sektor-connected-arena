@@ -1,52 +1,52 @@
-# Warnings Suprimidos
+﻿# Suppressed Warnings
 
-Registro de warnings do React Native suprimidos via `LogBox.ignoreLogs`, com origem confirmada e condição de remoção.
+Record of React Native warnings suppressed via `LogBox.ignoreLogs`, with confirmed origin and removal condition.
 
 ---
 
 ## Warning: `props.pointerEvents is deprecated. Use style.pointerEvents`
 
-### Descrição
+### Description
 
-O React Native emite este warning quando um componente recebe `pointerEvents` como prop direta em vez de via `style.pointerEvents`. A API de prop foi depreciada em favor da propriedade de estilo.
+React Native emits this warning when a component receives `pointerEvents` as a direct prop instead of via `style.pointerEvents`. The prop API was deprecated in favor of the style property.
 
-### Origem
+### Origin
 
-**Dependência de terceiros** — o warning não é originado por código do app, mas por uma das seguintes dependências candidatas:
+**Third-party dependency** — the warning is not caused by app code, but by one of the following candidate dependencies:
 
-| Pacote | Versão no projeto |
+| Package | Version in project |
 |---|---|
 | `react-native-reanimated` | `~4.1.1` |
 | `@react-navigation/elements` | `^2.6.3` |
 | `expo-router` | `~6.0.23` |
 
-O código do app não usa `pointerEvents` como prop direta; portanto, a supressão é segura e não mascara nenhum problema interno.
+The app does not use `pointerEvents` as a direct prop; therefore suppressing this warning is considered safe and does not mask an internal issue.
 
-### Estratégia adotada
+### Adopted strategy
 
-Supressão explícita via `LogBox.ignoreLogs` no escopo do módulo de `src/app/_layout.tsx`, logo após os imports:
+Explicit suppression via `LogBox.ignoreLogs` in the root layout module `src/app/_layout.tsx`, right after imports:
 
 ```tsx
-// Suprime warning de prop deprecada originado por dependência de terceiros.
-// Candidatos: react-native-reanimated ~4.1.1, @react-navigation/elements ^2.6.3,
-// expo-router ~6.0.23. Remover quando a dependência for atualizada.
+// Suppress deprecated prop warning coming from a third-party dependency.
+// Candidates: react-native-reanimated ~4.1.1, @react-navigation/elements ^2.6.3,
+// expo-router ~6.0.23. Remove when the dependency is updated.
 LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 ```
 
-A supressão fica centralizada em `_layout.tsx` (raiz da navegação) para garantir que seja aplicada antes de qualquer tela ser renderizada.
+Suppression is centralized in `_layout.tsx` (navigation root) to ensure it is applied before any screen renders.
 
-### Condição de remoção
+### Removal condition
 
-Remover a linha `LogBox.ignoreLogs(["props.pointerEvents is deprecated"])` de `_layout.tsx` **quando a dependência causadora for atualizada para uma versão que use `style.pointerEvents` internamente**.
+Remove `LogBox.ignoreLogs(["props.pointerEvents is deprecated"])` from `_layout.tsx` **when the causing dependency is updated to a version that uses `style.pointerEvents` internally**.
 
-Passos para verificar se a remoção é segura:
-1. Atualizar a dependência suspeita (ex.: `react-native-reanimated`, `@react-navigation/elements` ou `expo-router`).
-2. Remover a linha de supressão.
-3. Executar o app e percorrer o fluxo de autenticação (`/login` → `/select-team` → `/community`).
-4. Confirmar que o warning não reaparece no console do Metro.
+Steps to verify it is safe to remove:
+1. Upgrade the suspected dependency (e.g., `react-native-reanimated`, `@react-navigation/elements` or `expo-router`).
+2. Remove the suppression line.
+3. Run the app and navigate the auth flow (`/login` → `/select-team` → `/community`).
+4. Confirm the warning does not reappear in the Metro console.
 
-### Referência
+### Reference
 
 - **Spec:** `corrigir-fluxo-auth-cognito`
-- **Task:** `5.2 Criar docs/warnings-suprimidos.md documentando a origem e estratégia`
-- **Requisito:** `2.4`
+- **Task:** `5.2 Create docs/warnings-suprimidos.md documenting origin and strategy`
+- **Requirement:** `2.4`

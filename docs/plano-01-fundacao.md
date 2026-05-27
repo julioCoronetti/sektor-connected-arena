@@ -1,82 +1,82 @@
-# Plano 01 — Fundação do Projeto
+﻿# Plan 01 — Project Foundation
 
-> **Princípio central:** Criar apenas o que os planos seguintes vão usar. Sem componentes genéricos "para o futuro". Código simples, estrutura previsível.
-
----
-
-## Objetivo
-
-Estabelecer a base técnica do App: estrutura de pastas, sistema de navegação (tabs + fluxo de autenticação), tipos TypeScript compartilhados, configuração do NativeWind e telas skeleton navegáveis.
-
-Este plano não entrega nenhuma funcionalidade de usuário final — ele entrega a **fundação** que todos os outros planos vão usar.
+> **Core principle:** Build only what the following plans will use. No generic "for the future" components. Keep code simple and structure predictable.
 
 ---
 
-## Dependências
+## Objective
 
-**Nenhuma.** Este é o plano inicial.
+Establish the technical foundation of the App: folder structure, navigation system (tabs + auth flow), shared TypeScript types, NativeWind configuration and navigable skeleton screens.
 
----
-
-## Princípios de Simplicidade
-
-- Criar apenas o que os planos seguintes vão usar — sem componentes genéricos "para o futuro"
-- Telas skeleton devem ser `<View>` + `<Text>` simples, sem lógica
-- Tipos TypeScript devem cobrir apenas as entidades centrais (User, Post, Match, Prediction, PressureBar)
-- NativeWind configurado uma única vez; não criar utilitários de tema customizados ainda
-- Nenhum estado global neste plano — apenas estrutura e navegação
+This plan does not deliver any end-user feature — it delivers the **foundation** used by all subsequent plans.
 
 ---
 
-## Estrutura de Pastas a Criar
+## Dependencies
+
+**None.** This is the initial plan.
+
+---
+
+## Simplicity Principles
+
+- Build only what the following plans will use — no generic "for the future" components
+- Skeleton screens should be plain `<View>` + `<Text>`, without logic
+- TypeScript types should cover only core entities (User, Post, Match, Prediction, PressureBar)
+- Configure NativeWind once; do not create custom theming utilities yet
+- No global state in this plan — only structure and navigation
+
+---
+
+## Folder Structure to Create
 
 ```
 src/
 ├── app/
-│   ├── _layout.tsx              ← Root layout com AuthGuard (stub)
-│   ├── index.tsx                ← Redirect para (tabs) ou (auth)
+│   ├── _layout.tsx              ← Root layout with AuthGuard (stub)
+│   ├── index.tsx                ← Redirect to (tabs) or (auth)
 │   ├── (auth)/
-│   │   ├── _layout.tsx          ← Stack layout para auth
-│   │   ├── login.tsx            ← Tela skeleton
-│   │   └── register.tsx         ← Tela skeleton
+│   │   ├── _layout.tsx          ← Stack layout for auth
+│   │   ├── login.tsx            ← Skeleton screen
+│   │   └── register.tsx         ← Skeleton screen
 │   ├── (tabs)/
 │   │   ├── _layout.tsx          ← Bottom tabs layout
-│   │   ├── community.tsx        ← Tela skeleton
-│   │   ├── arena.tsx            ← Tela skeleton
-│   │   └── profile.tsx          ← Tela skeleton
+│   │   ├── community.tsx        ← Skeleton screen
+│   │   ├── arena.tsx            ← Skeleton screen
+│   │   └── profile.tsx          ← Skeleton screen
 │   └── arena/
-│       └── [matchId].tsx        ← Tela skeleton (rota dinâmica)
+│       └── [matchId].tsx        ← Skeleton screen (dynamic route)
 │
 ├── components/
-│   ├── arena/                   ← Vazio (com .gitkeep)
-│   ├── community/               ← Vazio (com .gitkeep)
-│   └── ui/                      ← Vazio (com .gitkeep)
+│   ├── arena/                   ← Empty (with .gitkeep)
+│   ├── community/               ← Empty (with .gitkeep)
+│   └── ui/                      ← Empty (with .gitkeep)
 │
 ├── services/
-│   ├── api.ts                   ← Stub: funções vazias tipadas
-│   ├── websocket.ts             ← Stub: funções vazias tipadas
-│   ├── auth.ts                  ← Stub: funções vazias tipadas
-│   └── matchSimulator.ts        ← Stub: funções vazias tipadas
+│   ├── api.ts                   ← Stub: typed empty functions
+│   ├── websocket.ts             ← Stub: typed empty functions
+│   ├── auth.ts                  ← Stub: typed empty functions
+│   └── matchSimulator.ts        ← Stub: typed empty functions
 │
 ├── hooks/
-│   ├── useArena.ts              ← Stub: hook vazio tipado
-│   ├── useWebSocket.ts          ← Stub: hook vazio tipado
-│   └── useCommunity.ts          ← Stub: hook vazio tipado
+│   ├── useArena.ts              ← Stub: typed empty hook
+│   ├── useWebSocket.ts          ← Stub: typed empty hook
+│   └── useCommunity.ts          ← Stub: typed empty hook
 │
 ├── store/
-│   ├── arenaStore.ts            ← Stub: store vazio tipado
-│   └── authStore.ts             ← Stub: store vazio tipado
+│   ├── arenaStore.ts            ← Stub: typed empty store
+│   └── authStore.ts             ← Stub: typed empty store
 │
 ├── types/
-│   └── index.ts                 ← Todas as interfaces TypeScript
+│   └── index.ts                 ← All TypeScript interfaces
 │
 └── constants/
-    └── config.ts                ← URLs, região AWS, IDs de times
+    └── config.ts                ← URLs, AWS region, team IDs
 ```
 
 ---
 
-## Arquivos a Implementar
+## Files to Implement
 
 ### `src/types/index.ts`
 
@@ -143,7 +143,7 @@ export const API_REST_URL = process.env.EXPO_PUBLIC_API_REST_URL ?? 'https://PLA
 export const API_WS_URL = process.env.EXPO_PUBLIC_API_WS_URL ?? 'wss://PLACEHOLDER.execute-api.us-east-1.amazonaws.com/prod';
 
 export const STADIUM_COORDS = {
-  latitude: -23.5505,   // Substituir pelas coordenadas reais no Plano 06
+  latitude: -23.5505,   // Replace with real coordinates in Plan 06
   longitude: -46.6333,
   radiusMeters: 500,
 };
@@ -159,8 +159,8 @@ export const TEAMS = [
 ```tsx
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-// authStore será implementado no Plano 02
-// Por ora, stub que sempre redireciona para login
+// authStore will be implemented in Plan 02
+// For now, a stub that always redirects to login
 
 export default function RootLayout() {
   return <Slot />;
@@ -183,10 +183,10 @@ export default function TabsLayout() {
 }
 ```
 
-### Telas Skeleton (padrão para todas)
+### Skeleton Screens (pattern for all)
 
 ```tsx
-// Exemplo: src/app/(tabs)/community.tsx
+// Example: src/app/(tabs)/community.tsx
 import { Text, View } from 'react-native';
 
 export default function CommunityScreen() {
@@ -201,9 +201,9 @@ export default function CommunityScreen() {
 
 ---
 
-## Configuração NativeWind
+## NativeWind Configuration
 
-Verificar se `tailwind.config.js` já aponta para `src/`. Se não, atualizar:
+Check if `tailwind.config.js` already points to `src/`. If not, update it:
 
 ```js
 /** @type {import('tailwindcss').Config} */
@@ -215,7 +215,7 @@ module.exports = {
 };
 ```
 
-E garantir que `src/global.css` contém:
+And ensure `src/global.css` contains:
 ```css
 @tailwind base;
 @tailwind components;
@@ -224,27 +224,27 @@ E garantir que `src/global.css` contém:
 
 ---
 
-## Critérios de Aceitação (Checklist de Done)
+## Acceptance Criteria (Done checklist)
 
-- [ ] Estrutura de pastas criada conforme especificado acima
-- [ ] Expo Router com grupos `(auth)` e `(tabs)` funcionando
-- [ ] Tab bar exibe três abas: "Comunidade", "Arena" e "Perfil"
-- [ ] Cada aba navega para sua tela skeleton sem erros
-- [ ] `src/types/index.ts` com todas as 7 interfaces definidas
-- [ ] `src/constants/config.ts` com URLs, região AWS e times
-- [ ] `tailwind.config.js` apontando para `src/**`
-- [ ] App inicia sem erros de navegação ou TypeScript
-- [ ] `tsc --noEmit` passa sem erros
-- [ ] Todos os arquivos stub criados (services, hooks, store)
+- [ ] Folder structure created as specified above
+- [ ] Expo Router with `(auth)` and `(tabs)` groups working
+- [ ] Tab bar shows three tabs: "Comunidade", "Arena" and "Perfil"
+- [ ] Each tab navigates to its skeleton screen without errors
+- [ ] `src/types/index.ts` with all 7 interfaces defined
+- [ ] `src/constants/config.ts` with URLs, AWS region and teams
+- [ ] `tailwind.config.js` points to `src/**`
+- [ ] App starts without navigation or TypeScript errors
+- [ ] `tsc --noEmit` passes without errors
+- [ ] All stub files created (services, hooks, store)
 
 ---
 
-## O que este plano entrega para os próximos
+## What this plan delivers for the next ones
 
-| Plano | O que usa deste plano |
-|-------|----------------------|
-| Plano 02 | Rotas `(auth)/login`, `(auth)/register`, arquivo `authStore.ts` |
-| Plano 03 | Rota `arena/[matchId].tsx`, tipos `Match`, `Prediction`, `PressureBarState` |
-| Plano 04 | Tipos `Match`, `Prediction`; arquivo `matchSimulator.ts` |
-| Plano 05 | Rota `(tabs)/community.tsx`, tipos `Post`, `Comment`; arquivo `useCommunity.ts` |
-| Plano 06 | Configuração NativeWind, `STADIUM_COORDS` em `config.ts` |
+| Plan | What it provides |
+|------|------------------|
+| Plan 02 | `(auth)/login`, `(auth)/register`, `authStore.ts` |
+| Plan 03 | `arena/[matchId].tsx`, types `Match`, `Prediction`, `PressureBarState` |
+| Plan 04 | Types `Match`, `Prediction`; file `matchSimulator.ts` |
+| Plan 05 | `(tabs)/community.tsx`, types `Post`, `Comment`; file `useCommunity.ts` |
+| Plan 06 | NativeWind setup, `STADIUM_COORDS` in `config.ts` |
