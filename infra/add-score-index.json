@@ -1,0 +1,12 @@
+[
+  {
+    "Create": {
+      "IndexName": "score-index",
+      "KeySchema": [
+        { "AttributeName": "matchId", "KeyType": "HASH" },
+        { "AttributeName": "score", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  }
+]

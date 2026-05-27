@@ -111,7 +111,6 @@ async function getRecentPosts(teamId, limit) {
     const result = await dynamo.send(
       new QueryCommand({
         TableName: process.env.POSTS_TABLE,
-        IndexName: "teamId-createdAt-index",
         KeyConditionExpression: "teamId = :t",
         ExpressionAttributeValues: { ":t": { S: teamId } },
         ScanIndexForward: false,
@@ -123,7 +122,7 @@ async function getRecentPosts(teamId, limit) {
     console.warn(
       JSON.stringify({
         level: "WARN",
-        message: "posts query failed, GSI may not exist yet",
+        message: "posts query failed",
         teamId,
         cause: e.message,
       }),

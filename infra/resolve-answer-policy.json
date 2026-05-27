@@ -10,8 +10,15 @@
     {
       "Sid": "ReadWriteScores",
       "Effect": "Allow",
-      "Action": ["dynamodb:UpdateItem", "dynamodb:GetItem"],
-      "Resource": "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-scores"
+      "Action": [
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-scores",
+        "arn:aws:dynamodb:us-east-1:482712210181:table/sektor-scores/index/score-index"
+      ]
     },
     {
       "Sid": "ReadConnections",
