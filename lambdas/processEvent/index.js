@@ -17,7 +17,16 @@ const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION });
 const scheduler = new SchedulerClient({ region: process.env.AWS_REGION });
 
-const RELEVANT_EVENTS = ["GOAL", "CORNER", "FOUL", "YELLOW_CARD", "RED_CARD"];
+const RELEVANT_EVENTS = new Set(["goal", "foul", "yellowCard", "redCard", "corner"]);
+
+// Map from simulateMatch event types to display names for prompts
+const EVENT_DISPLAY = {
+  goal: "Gol",
+  foul: "Falta",
+  yellowCard: "Cartão Amarelo",
+  redCard: "Cartão Vermelho",
+  corner: "Escanteio",
+};
 const PREDICTION_TTL_MS = 15_000;
 
 const REQUIRED_ENV = [
@@ -47,19 +56,35 @@ exports.handler = async (event) => {
       Buffer.from(record.kinesis.data, "base64").toString(),
     );
 
-    if (!RELEVANT_EVENTS.includes(payload.eventType)) continue;
+    // simulateMatch emits { type: "MATCH_EVENT", event: { type: "goal", matchId, minute, ... } }
+    // Only process MATCH_EVENT records with relevant event types
+    if (payload.type !== "MATCH_EVENT" || !payload.event) continue;
+
+    const matchEvent = payload.event;
+    const eventType = matchEvent.type; // "goal", "foul", "yellowCard", etc.
+
+    if (!RELEVANT_EVENTS.has(eventType)) continue;
+
+    // Normalize for prompt
+    const normalizedPayload = {
+      eventType: eventType,
+      eventTypeDisplay: EVENT_DISPLAY[eventType] ?? eventType,
+      matchId: matchEvent.matchId,
+      minute: matchEvent.minute,
+      teamId: matchEvent.teamId,
+    };
 
     // Get active connections grouped by teamId
-    const connections = await getActiveConnectionsWithTeam(payload.matchId);
+    const connections = await getActiveConnectionsWithTeam(normalizedPayload.matchId);
     const byTeam = groupByTeam(connections);
-    const teamIds = Object.keys(byTeam);
+    const teamIds = Object.keys(byTeam).filter(k => k !== "null" && k !== "spectator");
 
-    if (teamIds.length === 0) {
+    if (teamIds.length === 0 && !(byTeam["null"] || byTeam["spectator"])) {
       console.log(
         JSON.stringify({
           level: "INFO",
           message: "no active connections, skipping prediction",
-          matchId: payload.matchId,
+          matchId: normalizedPayload.matchId,
         }),
       );
       continue;
@@ -67,16 +92,17 @@ exports.handler = async (event) => {
 
     // Generate one personalized prediction per team present
     const predictionsByTeam = {};
-    for (const teamId of teamIds) {
+    const teamsToGenerate = teamIds.length > 0 ? teamIds : ["team-a"];
+    for (const teamId of teamsToGenerate) {
       let prediction;
       try {
-        prediction = await generatePrediction(payload, teamId);
+        prediction = await generatePrediction(normalizedPayload, teamId);
       } catch (e) {
         console.error(
           JSON.stringify({
             level: "ERROR",
             message: "bedrock failure",
-            matchId: payload.matchId,
+            matchId: normalizedPayload.matchId,
             teamId,
             cause: e.message,
           }),
@@ -134,7 +160,7 @@ async function generatePrediction(event, audienceTeamId) {
   const prefs = getTeamPreferences(audienceTeamId);
 
   const prompt = `Você é um assistente de futebol para a torcida do ${prefs.teamName}.
-Ocorreu um evento: ${event.eventType} no minuto ${event.minute ?? "?"}.
+Ocorreu um evento: ${event.eventTypeDisplay} no minuto ${event.minute ?? "?"}.
 Gere uma pergunta de predição rápida em português, tom ${prefs.tone}, com 4 opções de resposta.
 A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.
 Responda APENAS com JSON válido no formato:
