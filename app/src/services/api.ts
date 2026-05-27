@@ -66,4 +66,22 @@ export const api = {
     request<{ uploadUrl: string; fileUrl: string }>(
       `/upload-url?filename=${encodeURIComponent(filename)}&type=${encodeURIComponent(type)}`,
     ),
+
+  getLeaderboard: (matchId: string, limit = 10) =>
+    request<{
+      leaderboard: Array<{
+        rank: number;
+        userId: string;
+        userName: string;
+        teamId: string | null;
+        score: number;
+        correctCount: number;
+        wrongCount: number;
+        currentStreak: number;
+        bestStreak: number;
+        badges: string[];
+      }>;
+    }>(
+      `/leaderboard?matchId=${encodeURIComponent(matchId)}&limit=${limit}`,
+    ),
 };

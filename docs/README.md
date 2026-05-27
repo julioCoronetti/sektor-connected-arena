@@ -28,6 +28,8 @@ Plano 01 → Plano 02 → Plano 03 → Plano 04
 | 04 | [plano-04-simulador-pipeline.md](./plano-04-simulador-pipeline.md) | Script simulador DFL, Kinesis → EventBridge → Lambda → Bedrock → WebSocket | 03 |
 | 05 | [plano-05-comunidade.md](./plano-05-comunidade.md) | Feed de posts, criar post, curtidas otimistas, comentários, upload S3 | 01, 02 |
 | 06 | [plano-06-gps-ar-polimento.md](./plano-06-gps-ar-polimento.md) | GPS multiplicador 2x, AR mockup via câmera, tema visual Sektor | 01–05 |
+| 07 | [plano-07-integracao-aws.md](./plano-07-integracao-aws.md) | Conectar app à AWS real, remover mocks, smoke multijogador | 01–06 |
+| 08 | [plano-08-final-challenge.md](./plano-08-final-challenge.md) | Fechamento do Challenge: DFL real, leaderboard/streaks/badges, sentiment, Watch Party Web, entregáveis | 07 |
 
 ---
 

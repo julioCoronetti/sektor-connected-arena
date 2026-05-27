@@ -11,12 +11,13 @@ const {
   SchedulerClient,
   CreateScheduleCommand,
 } = require("@aws-sdk/client-scheduler");
+const { getTeamPreferences } = require("./preferences");
 
 const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION });
 const scheduler = new SchedulerClient({ region: process.env.AWS_REGION });
 
-const RELEVANT_EVENTS = ["GOAL", "CORNER", "FOUL", "YELLOW_CARD"];
+const RELEVANT_EVENTS = ["GOAL", "CORNER", "FOUL", "YELLOW_CARD", "RED_CARD"];
 const PREDICTION_TTL_MS = 15_000;
 
 const REQUIRED_ENV = [
@@ -48,48 +49,96 @@ exports.handler = async (event) => {
 
     if (!RELEVANT_EVENTS.includes(payload.eventType)) continue;
 
-    let prediction;
-    try {
-      prediction = await generatePrediction(payload);
-    } catch (e) {
-      console.error(
+    // Get active connections grouped by teamId
+    const connections = await getActiveConnectionsWithTeam(payload.matchId);
+    const byTeam = groupByTeam(connections);
+    const teamIds = Object.keys(byTeam);
+
+    if (teamIds.length === 0) {
+      console.log(
         JSON.stringify({
-          level: "ERROR",
-          message: "bedrock failure",
+          level: "INFO",
+          message: "no active connections, skipping prediction",
           matchId: payload.matchId,
-          cause: e.message,
         }),
       );
       continue;
     }
 
-    try {
-      await schedulePredictionResolution(prediction.prediction);
-    } catch (e) {
-      console.error(
-        JSON.stringify({
-          level: "ERROR",
-          message: "scheduler create failed",
-          matchId: prediction.prediction.matchId,
-          predictionId: prediction.prediction.id,
-          cause: e.message,
-        }),
-      );
-      // R1 AC4: descartar a predição e ack no Kinesis sem propagar exceção.
-      continue;
+    // Generate one personalized prediction per team present
+    const predictionsByTeam = {};
+    for (const teamId of teamIds) {
+      let prediction;
+      try {
+        prediction = await generatePrediction(payload, teamId);
+      } catch (e) {
+        console.error(
+          JSON.stringify({
+            level: "ERROR",
+            message: "bedrock failure",
+            matchId: payload.matchId,
+            teamId,
+            cause: e.message,
+          }),
+        );
+        continue;
+      }
+
+      try {
+        await schedulePredictionResolution(prediction.prediction);
+      } catch (e) {
+        console.error(
+          JSON.stringify({
+            level: "ERROR",
+            message: "scheduler create failed",
+            matchId: prediction.prediction.matchId,
+            predictionId: prediction.prediction.id,
+            cause: e.message,
+          }),
+        );
+        continue;
+      }
+
+      predictionsByTeam[teamId] = prediction;
     }
 
-    const connections = await getActiveConnections(prediction.prediction.matchId);
-    await distributeToConnections(connections, prediction);
+    // Distribute to each team's connections
+    const api = new ApiGatewayManagementApiClient({
+      endpoint: process.env.WS_ENDPOINT,
+    });
+
+    for (const [teamId, prediction] of Object.entries(predictionsByTeam)) {
+      const teamConnections = byTeam[teamId] ?? [];
+      await distributeToConnections(
+        api,
+        teamConnections.map((c) => c.connectionId),
+        prediction,
+      );
+    }
+
+    // Spectator connections (no teamId) get team-a prediction if available
+    const spectatorConnections = (byTeam["spectator"] ?? []).concat(byTeam["null"] ?? []);
+    const fallbackPrediction =
+      predictionsByTeam["team-a"] ?? Object.values(predictionsByTeam)[0];
+    if (spectatorConnections.length > 0 && fallbackPrediction) {
+      await distributeToConnections(
+        api,
+        spectatorConnections.map((c) => c.connectionId),
+        fallbackPrediction,
+      );
+    }
   }
 };
 
-async function generatePrediction(event) {
-  const prompt = `Você é um assistente de futebol. Ocorreu um evento: ${event.eventType} no minuto ${event.minute}.
-Gere uma pergunta de predição rápida em português com 4 opções de resposta.
+async function generatePrediction(event, audienceTeamId) {
+  const prefs = getTeamPreferences(audienceTeamId);
+
+  const prompt = `Você é um assistente de futebol para a torcida do ${prefs.teamName}.
+Ocorreu um evento: ${event.eventType} no minuto ${event.minute ?? "?"}.
+Gere uma pergunta de predição rápida em português, tom ${prefs.tone}, com 4 opções de resposta.
+A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.
 Responda APENAS com JSON válido no formato:
-{"question": "...", "options": ["...", "...", "...", "..."], "correctOption": 0}
-A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.`;
+{"question": "...", "options": ["...", "...", "...", "..."], "correctOption": 0}`;
 
   const response = await bedrock.send(
     new InvokeModelCommand({
@@ -104,7 +153,17 @@ A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.`;
   );
 
   const body = JSON.parse(Buffer.from(response.body).toString());
-  const parsed = JSON.parse(body.output.message.content[0].text);
+  const rawText = body.output.message.content[0].text;
+
+  // Tolerant JSON extraction — handles cases where Bedrock wraps JSON in markdown
+  let parsed;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    const match = rawText.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("Bedrock returned non-JSON: " + rawText.slice(0, 200));
+    parsed = JSON.parse(match[0]);
+  }
 
   const createdAt = new Date();
   const expiresAt = new Date(createdAt.getTime() + PREDICTION_TTL_MS);
@@ -112,7 +171,7 @@ A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.`;
   return {
     type: "PREDICTION",
     prediction: {
-      id: `pred-${createdAt.getTime()}`,
+      id: `pred-${audienceTeamId}-${createdAt.getTime()}`,
       matchId: event.matchId,
       question: parsed.question,
       options: parsed.options,
@@ -124,11 +183,7 @@ A pergunta deve ser sobre o que vai acontecer nos próximos 30 segundos.`;
 }
 
 async function schedulePredictionResolution(prediction) {
-  // EventBridge Scheduler exige `at(yyyy-mm-ddTHH:MM:SS)` sem timezone nem ms.
-  const at = new Date(prediction.expiresAt)
-    .toISOString()
-    .split(".")[0];
-
+  const at = new Date(prediction.expiresAt).toISOString().split(".")[0];
   const scheduleName = `resolve-${prediction.id}`;
 
   await scheduler.send(
@@ -153,7 +208,7 @@ async function schedulePredictionResolution(prediction) {
   );
 }
 
-async function getActiveConnections(matchId) {
+async function getActiveConnectionsWithTeam(matchId) {
   const result = await dynamo.send(
     new QueryCommand({
       TableName: process.env.CONNECTIONS_TABLE,
@@ -161,15 +216,25 @@ async function getActiveConnections(matchId) {
       ExpressionAttributeValues: { ":matchId": { S: matchId } },
     }),
   );
-  return result.Items?.map((item) => item.connectionId.S) ?? [];
+  return (result.Items ?? []).map((item) => ({
+    connectionId: item.connectionId.S,
+    userId: item.userId?.S ?? null,
+    teamId: item.teamId?.S ?? null,
+  }));
 }
 
-async function distributeToConnections(connectionIds, message) {
-  const api = new ApiGatewayManagementApiClient({
-    endpoint: process.env.WS_ENDPOINT,
-  });
+function groupByTeam(connections) {
+  const groups = {};
+  for (const conn of connections) {
+    const key = conn.teamId ?? "null";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(conn);
+  }
+  return groups;
+}
 
-  // Cliente recebe predição sem `correctOption` (anti-cheat).
+async function distributeToConnections(api, connectionIds, message) {
+  // Client receives prediction without correctOption (anti-cheat)
   const safeMessage = {
     type: "PREDICTION",
     prediction: { ...message.prediction },

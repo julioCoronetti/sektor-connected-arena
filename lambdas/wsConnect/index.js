@@ -43,33 +43,39 @@ exports.handler = async (event) => {
   const { connectionId } = event.requestContext ?? {};
   const matchId = event.queryStringParameters?.matchId ?? "unknown";
   const token = event.queryStringParameters?.token;
+  const mode = event.queryStringParameters?.mode ?? "player";
+  const isSpectator = mode === "spectator";
 
   let userId = null;
   let teamId = null;
 
-  if (typeof token === "string" && token.length > 0) {
-    const claims = decodeJwtPayload(token);
-    if (claims && typeof claims.sub === "string") {
-      userId = claims.sub;
+  if (isSpectator) {
+    // Spectator connections are anonymous — no auth required
+    userId = `spectator-${connectionId}`;
+    teamId = null;
+  } else {
+    if (typeof token === "string" && token.length > 0) {
+      const claims = decodeJwtPayload(token);
+      if (claims && typeof claims.sub === "string") {
+        userId = claims.sub;
+      }
+      if (claims && typeof claims["custom:teamId"] === "string") {
+        teamId = claims["custom:teamId"];
+      }
     }
-    // Cognito custom attribute: custom:teamId
-    if (claims && typeof claims["custom:teamId"] === "string") {
-      teamId = claims["custom:teamId"];
-    }
-  }
 
-  // Fallback para `requestContext.authorizer.claims.sub` quando um Cognito
-  // Authorizer estiver anexado à rota $connect.
-  if (!userId) {
-    const authClaims =
-      event.requestContext?.authorizer?.claims ??
-      event.requestContext?.authorizer?.jwt?.claims ??
-      null;
-    if (authClaims && typeof authClaims.sub === "string") {
-      userId = authClaims.sub;
-    }
-    if (authClaims && typeof authClaims["custom:teamId"] === "string") {
-      teamId = authClaims["custom:teamId"];
+    // Fallback for Cognito Authorizer on $connect route
+    if (!userId) {
+      const authClaims =
+        event.requestContext?.authorizer?.claims ??
+        event.requestContext?.authorizer?.jwt?.claims ??
+        null;
+      if (authClaims && typeof authClaims.sub === "string") {
+        userId = authClaims.sub;
+      }
+      if (authClaims && typeof authClaims["custom:teamId"] === "string") {
+        teamId = authClaims["custom:teamId"];
+      }
     }
   }
 

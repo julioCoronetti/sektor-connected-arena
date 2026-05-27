@@ -21,6 +21,13 @@ export type AnswerRejectReason =
   | "DUPLICATE"
   | "INVALID_OPTION";
 
+export type SentimentType =
+  | "confiante"
+  | "ansiosa"
+  | "eufórica"
+  | "decepcionada"
+  | "neutra";
+
 export type ServerMessage =
   | { type: "MATCH_STATE"; match: Match; pressureBar: PressureBarState }
   | { type: "PREDICTION"; prediction: Prediction }
@@ -32,6 +39,9 @@ export type ServerMessage =
       score: number;
       correctCount: number;
       wrongCount: number;
+      currentStreak: number;
+      bestStreak: number;
+      badgesUnlocked?: string[];
     }
   | { type: "ANSWER_ACCEPTED"; predictionId: string }
   | {
@@ -44,7 +54,15 @@ export type ServerMessage =
   /** Evento de partida (gol, falta, cartão, etc.). */
   | { type: "MATCH_EVENT"; event: MatchEvent }
   /** KPIs agregados por time (posse, passes, xG, etc.). */
-  | { type: "TEAM_KPIS"; home: TeamKpis; guest: TeamKpis };
+  | { type: "TEAM_KPIS"; home: TeamKpis; guest: TeamKpis }
+  /** Alerta de sentimento do fórum gerado por Bedrock. */
+  | {
+      type: "SENTIMENT_ALERT";
+      teamId: string;
+      sentiment: SentimentType;
+      intensity: number;
+      summary: string;
+    };
 
 export type ClientMessage = {
   type: "ANSWER";
@@ -66,6 +84,7 @@ const SERVER_MESSAGE_TYPES: ServerMessageType[] = [
   "PLAYER_POSITIONS",
   "MATCH_EVENT",
   "TEAM_KPIS",
+  "SENTIMENT_ALERT",
 ];
 
 const ANSWER_REJECT_REASONS: AnswerRejectReason[] = [
@@ -275,6 +294,11 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         score: raw.score,
         correctCount: raw.correctCount,
         wrongCount: raw.wrongCount,
+        currentStreak: typeof raw.currentStreak === "number" ? raw.currentStreak : 0,
+        bestStreak: typeof raw.bestStreak === "number" ? raw.bestStreak : 0,
+        badgesUnlocked: Array.isArray(raw.badgesUnlocked)
+          ? (raw.badgesUnlocked as unknown[]).filter((b): b is string => typeof b === "string")
+          : undefined,
       };
 
     case "ANSWER_ACCEPTED":
@@ -312,6 +336,24 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         home: raw.home,
         guest: raw.guest,
       };
+
+    case "SENTIMENT_ALERT": {
+      if (
+        typeof raw.teamId !== "string" ||
+        typeof raw.sentiment !== "string" ||
+        typeof raw.intensity !== "number" ||
+        typeof raw.summary !== "string"
+      ) {
+        return null;
+      }
+      return {
+        type: "SENTIMENT_ALERT",
+        teamId: raw.teamId,
+        sentiment: raw.sentiment as import("./arenaProtocol").SentimentType,
+        intensity: raw.intensity,
+        summary: raw.summary,
+      };
+    }
   }
 }
 

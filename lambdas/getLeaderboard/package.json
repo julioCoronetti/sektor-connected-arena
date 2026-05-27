@@ -1,0 +1,9 @@
+{
+  "name": "getLeaderboard",
+  "version": "1.0.0",
+  "description": "Returns top N players for a match ordered by score",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0"
+  }
+}

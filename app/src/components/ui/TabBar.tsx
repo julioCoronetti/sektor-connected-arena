@@ -14,6 +14,7 @@ type TabConfig = {
 const TABS: TabConfig[] = [
   { name: "community", label: "Home", icon: "home" },
   { name: "arena", label: "Arena", icon: "shield-half" },
+  { name: "leaderboard", label: "Ranking", icon: "trophy" },
   { name: "profile", label: "Perfil", icon: "person" },
 ];
 

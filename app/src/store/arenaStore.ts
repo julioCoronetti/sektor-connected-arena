@@ -8,6 +8,7 @@ import type {
   PressureBarState,
   TeamKpis,
 } from "../types";
+import type { SentimentType } from "../services/arenaProtocol";
 
 export type AnswerSendState =
   | { state: "idle" }
@@ -20,6 +21,17 @@ export interface UserScore {
   score: number;
   correctCount: number;
   wrongCount: number;
+  currentStreak: number;
+  bestStreak: number;
+  badges: string[];
+}
+
+export interface SentimentAlert {
+  teamId: string;
+  sentiment: SentimentType;
+  intensity: number;
+  summary: string;
+  receivedAt: number;
 }
 
 export interface ArenaState {
@@ -43,6 +55,10 @@ export interface ArenaState {
   homeKpis: TeamKpis | null;
   /** KPIs do time visitante (guest). */
   guestKpis: TeamKpis | null;
+  /** Último alerta de sentimento recebido. */
+  sentimentAlert: SentimentAlert | null;
+  /** Badges desbloqueados nesta sessão (para exibir toast). */
+  pendingBadges: string[];
 
   setMatch: (match: Match) => void;
   setActivePrediction: (prediction: Prediction | null) => void;
@@ -54,6 +70,9 @@ export interface ArenaState {
   setPositionsFrame: (frame: PositionsFrame) => void;
   addMatchEvent: (event: MatchEvent) => void;
   setTeamKpis: (home: TeamKpis, guest: TeamKpis) => void;
+  setSentimentAlert: (alert: SentimentAlert | null) => void;
+  addPendingBadges: (badges: string[]) => void;
+  clearPendingBadges: () => void;
   reset: () => void;
 }
 
@@ -62,6 +81,9 @@ export const INITIAL_SCORE: UserScore = {
   score: 0,
   correctCount: 0,
   wrongCount: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  badges: [],
 };
 
 /** Quantos eventos recentes manter no histórico. */
@@ -78,6 +100,8 @@ export const useArenaStore = create<ArenaState>((set) => ({
   recentEvents: [],
   homeKpis: null,
   guestKpis: null,
+  sentimentAlert: null,
+  pendingBadges: [],
 
   setMatch: (match) => set({ match }),
   setActivePrediction: (prediction) => set({ activePrediction: prediction }),
@@ -112,6 +136,13 @@ export const useArenaStore = create<ArenaState>((set) => ({
 
   setTeamKpis: (home, guest) => set({ homeKpis: home, guestKpis: guest }),
 
+  setSentimentAlert: (alert) => set({ sentimentAlert: alert }),
+
+  addPendingBadges: (badges) =>
+    set((s) => ({ pendingBadges: [...s.pendingBadges, ...badges] })),
+
+  clearPendingBadges: () => set({ pendingBadges: [] }),
+
   reset: () =>
     set({
       match: null,
@@ -124,5 +155,7 @@ export const useArenaStore = create<ArenaState>((set) => ({
       recentEvents: [],
       homeKpis: null,
       guestKpis: null,
+      sentimentAlert: null,
+      pendingBadges: [],
     }),
 }));

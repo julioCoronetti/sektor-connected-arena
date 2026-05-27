@@ -1,0 +1,11 @@
+{
+  "name": "analyzeSentiment",
+  "version": "1.0.0",
+  "description": "Analyzes forum sentiment via Bedrock and broadcasts SENTIMENT_ALERT",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.600.0"
+  }
+}

@@ -1,11 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useEffect } from "react";
-import { ActivityIndicator, Animated, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
 import { AppHeader } from "../../components/ui/AppHeader";
 import { useBundesligaTeams } from "../../hooks/useBundesligaTeams";
 import { useAuthStore } from "../../store/authStore";
+import { useArenaStore } from "../../store/arenaStore";
+
+const BADGE_LABELS: Record<string, { label: string; emoji: string }> = {
+  "first-correct": { label: "Primeira Resposta Certa", emoji: "🎯" },
+  "streak-3": { label: "Sequência de 3", emoji: "🔥" },
+  "streak-5": { label: "Sequência de 5", emoji: "🔥🔥" },
+  "streak-10": { label: "Hot Hand", emoji: "🏆" },
+  "in-stadium": { label: "Na Arena", emoji: "📍" },
+  "score-100": { label: "Centena", emoji: "💯" },
+  "perfect-half": { label: "Primeiro Tempo Perfeito", emoji: "⭐" },
+};
 
 function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -53,6 +64,7 @@ export default function ProfileScreen() {
   const logout = useAuthStore((s) => s.logout);
   const isLoading = useAuthStore((s) => s.isLoading);
   const { isDark, toggleTheme } = useTheme();
+  const myScore = useArenaStore((s) => s.myScore);
 
   // Busca os times para resolver o nome a partir do teamId numérico
   const { teams } = useBundesligaTeams();
@@ -74,7 +86,7 @@ export default function ProfileScreen() {
       <AppHeader paddingBottom={4} />
       <View style={{ height: 1, backgroundColor: colors.border }} />
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }}>
         {/* Avatar */}
         <View style={{ marginBottom: 24, alignItems: "center" }}>
           <View
@@ -182,6 +194,100 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Conquistas (badges) */}
+        {myScore.badges.length > 0 ? (
+          <View
+            style={{
+              marginBottom: 24,
+              borderRadius: 16,
+              backgroundColor: colors.surface,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: colors.muted,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                marginBottom: 12,
+              }}
+            >
+              Conquistas
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {myScore.badges.map((badgeId) => {
+                const badge = BADGE_LABELS[badgeId];
+                return (
+                  <View
+                    key={badgeId}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#CC000015",
+                      borderRadius: 20,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderWidth: 1,
+                      borderColor: "#CC000040",
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, marginRight: 4 }}>
+                      {badge?.emoji ?? "🏅"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.text, fontWeight: "600" }}>
+                      {badge?.label ?? badgeId}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Score da sessão */}
+        {myScore.score > 0 ? (
+          <View
+            style={{
+              marginBottom: 24,
+              borderRadius: 16,
+              backgroundColor: colors.surface,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: colors.muted,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                marginBottom: 12,
+              }}
+            >
+              Última Sessão
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
+              <StatItem label="Pontos" value={String(myScore.score)} colors={colors} />
+              <StatItem
+                label="Acertos"
+                value={`${myScore.correctCount}/${myScore.correctCount + myScore.wrongCount}`}
+                colors={colors}
+              />
+              <StatItem
+                label="Melhor Seq."
+                value={`${myScore.bestStreak} 🔥`}
+                colors={colors}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {/* Logout */}
         <TouchableOpacity
           accessibilityRole="button"
@@ -202,7 +308,7 @@ export default function ProfileScreen() {
             </Text>
           )}
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -228,6 +334,23 @@ function InfoRow({
       >
         {value}
       </Text>
+    </View>
+  );
+}
+
+function StatItem({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: { muted: string; text: string };
+}) {
+  return (
+    <View style={{ alignItems: "center" }}>
+      <Text style={{ fontSize: 20, fontWeight: "700", color: colors.text }}>{value}</Text>
+      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>{label}</Text>
     </View>
   );
 }

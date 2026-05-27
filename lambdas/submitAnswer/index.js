@@ -56,6 +56,16 @@ exports.handler = async (event) => {
     return { statusCode: 200 };
   }
 
+  // Spectator connections cannot submit answers
+  if (conn.userId.startsWith("spectator-")) {
+    await reply(api, connectionId, {
+      type: "ANSWER_REJECTED",
+      predictionId: body?.predictionId,
+      reason: "UNAUTHORIZED",
+    });
+    return { statusCode: 200 };
+  }
+
   // teamId pode ser null para usuários sem time definido — aceita mesmo assim.
   const teamId = conn.teamId ?? null;
 

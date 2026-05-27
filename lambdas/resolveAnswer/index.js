@@ -7,6 +7,7 @@ const {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } = require("@aws-sdk/client-apigatewaymanagementapi");
+const { evaluateBadges } = require("./badges");
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION });
 
@@ -35,11 +36,7 @@ exports.handler = async (event) => {
   const { matchId, predictionId, correctOption } = event;
   if (!matchId || !predictionId || typeof correctOption !== "number") {
     console.error(
-      JSON.stringify({
-        level: "ERROR",
-        message: "invalid event payload",
-        event,
-      }),
+      JSON.stringify({ level: "ERROR", message: "invalid event payload", event }),
     );
     return { statusCode: 400 };
   }
@@ -66,7 +63,7 @@ exports.handler = async (event) => {
     );
   }
 
-  // R5 AC6: nenhuma resposta → emitir somente PREDICTION_RESULT.
+  // No answers — emit PREDICTION_RESULT only
   if (answersReadOk && answers.length === 0) {
     await broadcast(api, connections, {
       type: "PREDICTION_RESULT",
@@ -84,7 +81,7 @@ exports.handler = async (event) => {
     return { statusCode: 200 };
   }
 
-  // Atualiza scores por usuário.
+  // Update scores per user
   const scoreUpdates = [];
   if (answersReadOk) {
     for (const answer of answers) {
@@ -109,24 +106,23 @@ exports.handler = async (event) => {
             cause: e.message,
           }),
         );
-        // Continua processando os demais users.
       }
     }
   }
 
-  // Sempre emite PREDICTION_RESULT.
+  // Always emit PREDICTION_RESULT
   await broadcast(api, connections, {
     type: "PREDICTION_RESULT",
     predictionId,
     correctOption,
   });
 
-  // Emite SCORE_UPDATE individual por conexão pertencente ao userId.
+  // Emit SCORE_UPDATE per connection (includes streak + badges)
   if (answersReadOk && scoreUpdates.length > 0) {
     await sendScoreUpdates(api, connections, scoreUpdates);
   }
 
-  // Calcula e emite PRESSURE_UPDATE baseado em pontos acumulados por time.
+  // Compute and emit PRESSURE_UPDATE
   if (answersReadOk && answers.length > 0) {
     try {
       const pressureBar = await computePressureBar(matchId, answers, correctOption);
@@ -137,7 +133,6 @@ exports.handler = async (event) => {
         });
       }
     } catch (e) {
-      // Falha não-crítica: log e segue.
       console.error(
         JSON.stringify({
           level: "ERROR",
@@ -217,49 +212,138 @@ async function updateUserScore({
 
   const correct = selectedOption === correctOption;
   const now = new Date().toISOString();
+  const scoreInc = correct ? 10 * mult : 0;
 
-  // Idempotência: registramos `lastPredictionId` em um set; se o predictionId
-  // já estiver, não aplica incrementos de novo.
-  const params = {
-    TableName: process.env.SCORES_TABLE,
-    Key: {
-      matchId: { S: matchId },
-      userId: { S: userId },
-    },
-    UpdateExpression:
-      "ADD score :scoreInc, correctCount :cInc, wrongCount :wInc, multiplierAppliedCount :mInc, processedPredictions :pidSet " +
-      "SET lastUpdatedAt = :now",
-    ConditionExpression:
-      "attribute_not_exists(processedPredictions) OR NOT contains(processedPredictions, :pid)",
-    ExpressionAttributeValues: {
-      ":scoreInc": { N: String(correct ? 10 * mult : 0) },
-      ":cInc": { N: correct ? "1" : "0" },
-      ":wInc": { N: correct ? "0" : "1" },
-      ":mInc": { N: correct && mult === 2 ? "1" : "0" },
+  // Build UpdateExpression depending on correct/wrong (streak logic differs)
+  let updateExpr;
+  let exprValues;
+
+  if (correct) {
+    updateExpr =
+      "ADD score :scoreInc, correctCount :one, multiplierAppliedCount :mInc, processedPredictions :pidSet " +
+      "SET lastUpdatedAt = :now, " +
+      "    currentStreak = if_not_exists(currentStreak, :zero) + :one";
+    exprValues = {
+      ":scoreInc": { N: String(scoreInc) },
+      ":one": { N: "1" },
+      ":mInc": { N: mult === 2 ? "1" : "0" },
       ":pidSet": { SS: [predictionId] },
       ":pid": { S: predictionId },
       ":now": { S: now },
-    },
-    ReturnValues: "ALL_NEW",
-  };
+      ":zero": { N: "0" },
+    };
+  } else {
+    updateExpr =
+      "ADD score :scoreInc, wrongCount :one, processedPredictions :pidSet " +
+      "SET lastUpdatedAt = :now, currentStreak = :zero";
+    exprValues = {
+      ":scoreInc": { N: "0" },
+      ":one": { N: "1" },
+      ":pidSet": { SS: [predictionId] },
+      ":pid": { S: predictionId },
+      ":now": { S: now },
+      ":zero": { N: "0" },
+    };
+  }
 
   let res;
   try {
-    res = await dynamo.send(new UpdateItemCommand(params));
+    res = await dynamo.send(
+      new UpdateItemCommand({
+        TableName: process.env.SCORES_TABLE,
+        Key: {
+          matchId: { S: matchId },
+          userId: { S: userId },
+        },
+        UpdateExpression: updateExpr,
+        ConditionExpression:
+          "attribute_not_exists(processedPredictions) OR NOT contains(processedPredictions, :pid)",
+        ExpressionAttributeValues: exprValues,
+        ReturnValues: "ALL_NEW",
+      }),
+    );
   } catch (e) {
     if (e.name === "ConditionalCheckFailedException") {
-      // Já processado anteriormente (idempotência).
-      return null;
+      return null; // idempotency — already processed
     }
     throw e;
   }
 
   const attrs = res.Attributes ?? {};
-  return {
-    userId,
+  const currentStreak = Number(attrs.currentStreak?.N ?? 0);
+  const bestStreak = Number(attrs.bestStreak?.N ?? 0);
+
+  // Update bestStreak if currentStreak surpassed it
+  if (correct && currentStreak > bestStreak) {
+    try {
+      await dynamo.send(
+        new UpdateItemCommand({
+          TableName: process.env.SCORES_TABLE,
+          Key: {
+            matchId: { S: matchId },
+            userId: { S: userId },
+          },
+          UpdateExpression: "SET bestStreak = :cs",
+          ExpressionAttributeValues: { ":cs": { N: String(currentStreak) } },
+        }),
+      );
+    } catch (e) {
+      // Non-critical — log and continue
+      console.warn(
+        JSON.stringify({
+          level: "WARN",
+          message: "bestStreak update failed",
+          userId,
+          cause: e.message,
+        }),
+      );
+    }
+  }
+
+  // Evaluate and persist badges
+  const scoreState = {
     score: Number(attrs.score?.N ?? 0),
     correctCount: Number(attrs.correctCount?.N ?? 0),
     wrongCount: Number(attrs.wrongCount?.N ?? 0),
+    currentStreak,
+    multiplierAppliedCount: Number(attrs.multiplierAppliedCount?.N ?? 0),
+  };
+
+  const { newlyUnlocked } = evaluateBadges(attrs.badges?.SS ?? [], scoreState);
+
+  if (newlyUnlocked.length > 0) {
+    try {
+      await dynamo.send(
+        new UpdateItemCommand({
+          TableName: process.env.SCORES_TABLE,
+          Key: {
+            matchId: { S: matchId },
+            userId: { S: userId },
+          },
+          UpdateExpression: "ADD badges :newBadges",
+          ExpressionAttributeValues: { ":newBadges": { SS: newlyUnlocked } },
+        }),
+      );
+    } catch (e) {
+      console.warn(
+        JSON.stringify({
+          level: "WARN",
+          message: "badges update failed",
+          userId,
+          cause: e.message,
+        }),
+      );
+    }
+  }
+
+  return {
+    userId,
+    score: scoreState.score,
+    correctCount: scoreState.correctCount,
+    wrongCount: scoreState.wrongCount,
+    currentStreak,
+    bestStreak: Math.max(bestStreak, currentStreak),
+    badgesUnlocked: newlyUnlocked.length > 0 ? newlyUnlocked : undefined,
   };
 }
 
@@ -285,6 +369,9 @@ async function sendScoreUpdates(api, connections, scoreUpdates) {
           score: s.score,
           correctCount: s.correctCount,
           wrongCount: s.wrongCount,
+          currentStreak: s.currentStreak,
+          bestStreak: s.bestStreak,
+          badgesUnlocked: s.badgesUnlocked,
         };
         return sendOne(api, c.connectionId, Buffer.from(JSON.stringify(message)));
       }),
@@ -297,7 +384,7 @@ async function sendOne(api, connectionId, data) {
       new PostToConnectionCommand({ ConnectionId: connectionId, Data: data }),
     );
   } catch (e) {
-    if (e.name === "GoneException") return; // conexão expirada — segue.
+    if (e.name === "GoneException") return;
     console.error(
       JSON.stringify({
         level: "ERROR",
@@ -309,25 +396,7 @@ async function sendOne(api, connectionId, data) {
   }
 }
 
-/**
- * Calcula a barra de pressão baseada nos scores acumulados por time.
- *
- * Lê todos os scores da partida, agrupa por teamId, soma os pontos.
- * Retorna { teamA: %, teamB: % } onde teamA = "team-a" e teamB = "team-b".
- * Se nenhum time tiver pontos, retorna null (sem update).
- */
 async function computePressureBar(matchId, answers, correctOption) {
-  // Pontos desta rodada por time (acertos apenas).
-  const roundPointsByTeam = {};
-  for (const answer of answers) {
-    if (!answer.teamId) continue;
-    const correct = answer.selectedOption === correctOption;
-    if (!correct) continue;
-    const pts = 10 * (answer.gpsMultiplier === 2 ? 2 : 1);
-    roundPointsByTeam[answer.teamId] = (roundPointsByTeam[answer.teamId] ?? 0) + pts;
-  }
-
-  // Busca scores acumulados de todos os usuários desta partida.
   const result = await dynamo.send(
     new QueryCommand({
       TableName: process.env.SCORES_TABLE,
@@ -342,8 +411,6 @@ async function computePressureBar(matchId, answers, correctOption) {
     const score = Number(item.score?.N ?? 0);
     if (!userId || score === 0) continue;
 
-    // Busca teamId da conexão ativa para este userId.
-    // Usa os dados já disponíveis nas respostas desta rodada como cache.
     const answerForUser = answers.find((a) => a.userId === userId);
     const tid = answerForUser?.teamId ?? null;
     if (!tid) continue;

@@ -8,9 +8,10 @@ export const API_WS_URL =
   process.env.EXPO_PUBLIC_API_WS_URL ??
   "wss://PLACEHOLDER.execute-api.us-east-1.amazonaws.com/prod";
 
+// Allianz Arena — Munich (DFL feed is Bundesliga)
 export const STADIUM_COORDS = {
-  latitude: -23.5505, // Substituir pelas coordenadas reais no Plano 06
-  longitude: -46.6333,
+  latitude: 48.2188,
+  longitude: 11.6247,
   radiusMeters: 500,
 };
 
